@@ -416,20 +416,12 @@ export class RepoReportCardPanel {
             margin-bottom: 20px;
         }
 
-        #pdfBtn {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        #copyHtmlBtn {
+            background: linear-gradient(135deg, #6c63ff 0%, #4834df 100%);
         }
 
-        #pdfBtn:hover {
-            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
-        }
-
-        #printBtn {
-            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-        }
-
-        #printBtn:hover {
-            box-shadow: 0 5px 15px rgba(0, 123, 255, 0.4);
+        #copyHtmlBtn:hover {
+            box-shadow: 0 5px 15px rgba(108, 99, 255, 0.4);
         }
 
         /* Print styles */
@@ -506,8 +498,7 @@ https://github.com/owner/repo/pull/456"></textarea>
 
         <div class="button-group">
             <button id="analyzeBtn">🎓 Grade and Analyze</button>
-            <button id="pdfBtn" style="display: none;">📄 Save to PDF (html2pdf)</button>
-            <button id="printBtn" style="display: none;">🖨️ Print to PDF (Browser)</button>
+            <button id="copyHtmlBtn" style="display: none;">📋 Copy as HTML (Open in Browser)</button>
         </div>
 
         <div id="loading" style="display: none;">
@@ -534,8 +525,7 @@ https://github.com/owner/repo/pull/456"></textarea>
     <script>
         const vscode = acquireVsCodeApi();
         const analyzeBtn = document.getElementById('analyzeBtn');
-        const pdfBtn = document.getElementById('pdfBtn');
-        const printBtn = document.getElementById('printBtn');
+        const copyHtmlBtn = document.getElementById('copyHtmlBtn');
         const repoUrlsInput = document.getElementById('repoUrls');
         const loading = document.getElementById('loading');
         const resultsDiv = document.getElementById('results');
@@ -559,155 +549,47 @@ https://github.com/owner/repo/pull/456"></textarea>
             vscode.postMessage({ command: 'analyze', urls });
         });
 
-        pdfBtn.addEventListener('click', async () => {
-            const element = document.querySelector('.container');
-            
-            // Show generating message
-            const originalText = pdfBtn.textContent;
-            pdfBtn.textContent = '⏳ Generating PDF...';
-            pdfBtn.disabled = true;
-            
-            // Hide form and buttons before generating PDF
-            const formGroup = document.querySelector('.form-group');
-            const buttonGroup = document.querySelector('.button-group');
-            const loadingDiv = document.getElementById('loading');
-            const progressBarDiv = document.getElementById('progressBar');
-            
-            formGroup.style.display = 'none';
-            buttonGroup.style.display = 'none';
-            loadingDiv.style.display = 'none';
-            progressBarDiv.style.display = 'none';
-            
-            // Set body background to white for PDF
-            const originalBodyBg = document.body.style.background;
-            document.body.style.background = 'white';
-            
-            // Ensure all images are loaded
-            const images = element.querySelectorAll('img');
-            const imageLoadPromises = Array.from(images).map(img => {
-                if (img.complete) return Promise.resolve();
-                return new Promise((resolve) => {
-                    img.onload = resolve;
-                    img.onerror = resolve;
-                    setTimeout(resolve, 1000); // Timeout after 1 second
-                });
-            });
-            
-            await Promise.all(imageLoadPromises);
-            
-            // Add PDF-specific class to improve text rendering
-            element.classList.add('pdf-export');
-            
-            // Force text normalization to prevent spacing issues
-            const textElements = element.querySelectorAll('.summary, .improvement-item, .assessment-title, .repo-name');
-            textElements.forEach(el => {
-                el.style.letterSpacing = '0px';
-                el.style.wordSpacing = '0px';
-            });
-            
-            // Wait for DOM to stabilize and ensure content is visible
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            // Extensive debugging
-            console.log('=== PDF GENERATION DEBUG ===');
-            console.log('Element:', element);
-            console.log('Element tagName:', element.tagName);
-            console.log('Element scrollHeight:', element.scrollHeight);
-            console.log('Element offsetHeight:', element.offsetHeight);
-            console.log('Element clientHeight:', element.clientHeight);
-            console.log('Element innerHTML length:', element.innerHTML.length);
-            console.log('Element has content:', element.innerHTML.length > 0);
-            console.log('Results div content:', resultsDiv.innerHTML.substring(0, 200));
-            console.log('Number of repo-cards:', element.querySelectorAll('.repo-card').length);
-            console.log('Window size:', window.innerWidth, 'x', window.innerHeight);
-            
-            // Validate we have content to export
-            if (element.innerHTML.length < 100 || resultsDiv.innerHTML.length < 100) {
-                alert('Error: No content to export. Please analyze repositories first.');
-                throw new Error('No content to export');
-            }
-            
+        copyHtmlBtn.addEventListener('click', async () => {
             try {
-                const opt = {
-                    margin: 0.5,
-                    filename: 'repo-report-card.pdf',
-                    image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { 
-                        scale: 2,
-                        useCORS: true,
-                        allowTaint: true,
-                        backgroundColor: '#ffffff',
-                        logging: true,
-                        width: element.scrollWidth,
-                        height: element.scrollHeight,
-                        x: 0,
-                        y: 0
-                    },
-                    jsPDF: { 
-                        unit: 'in', 
-                        format: 'letter', 
-                        orientation: 'portrait'
-                    }
-                };
+                // Create a standalone HTML document with all styles inline
+                const container = document.querySelector('.container');
+                const styles = document.querySelector('style').innerHTML;
                 
-                console.log('Starting PDF generation with options:', opt);
-                const worker = html2pdf().set(opt).from(element);
-                await worker.save();
-                console.log('PDF generation completed successfully');
-            } catch (error) {
-                console.error('PDF generation error:', error);
-                alert('Error generating PDF: ' + error.message + '\\n\\nPlease check the console for details.');
-            } finally {
-                // Restore visibility and remove PDF class after PDF generation
-                formGroup.style.display = '';
-                buttonGroup.style.display = '';
-                progressBarDiv.style.display = 'none';
-                element.classList.remove('pdf-export');
+                const fullHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repo Report Card</title>
+    <style>${styles}</style>
+</head>
+<body>
+    <div class="container">
+        ${container.innerHTML}
+    </div>
+</body>
+</html>`;
                 
-                // Restore body background
-                document.body.style.background = originalBodyBg;
+                // Copy to clipboard
+                await navigator.clipboard.writeText(fullHtml);
                 
-                // Reset text spacing
-                textElements.forEach(el => {
-                    el.style.letterSpacing = '';
-                    el.style.wordSpacing = '';
-                });
+                // Show success message
+                const originalText = copyHtmlBtn.textContent;
+                copyHtmlBtn.textContent = '✅ Copied! Paste in browser';
+                copyHtmlBtn.style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
                 
-                // Restore button
-                pdfBtn.textContent = originalText;
-                pdfBtn.disabled = false;
-            }
-        });
-
-        printBtn.addEventListener('click', () => {
-            // Hide form and buttons before printing
-            const formGroup = document.querySelector('.form-group');
-            const buttonGroup = document.querySelector('.button-group');
-            const loadingDiv = document.getElementById('loading');
-            const progressBarDiv = document.getElementById('progressBar');
-            
-            formGroup.style.display = 'none';
-            buttonGroup.style.display = 'none';
-            loadingDiv.style.display = 'none';
-            progressBarDiv.style.display = 'none';
-            
-            // Add a note about using browser print dialog
-            const note = document.createElement('div');
-            note.style.cssText = 'background: #fff3cd; border: 1px solid #ffc107; padding: 10px; margin: 10px 0; border-radius: 5px; text-align: center;';
-            note.innerHTML = '<strong>📄 Print Dialog Instructions:</strong><br>In the print dialog, select "Save as PDF" as the destination to save this report as a PDF file.';
-            document.querySelector('.container').insertBefore(note, document.querySelector('.container').firstChild);
-            
-            // Trigger browser print dialog
-            setTimeout(() => {
-                window.print();
+                // Show instructions
+                alert('✅ HTML copied to clipboard!\\n\\nNext steps:\\n1. Open a new browser tab\\n2. Press Ctrl+Shift+I (or Cmd+Opt+I on Mac) to open Dev Tools\\n3. Go to Console tab\\n4. Type: document.body.innerHTML = \\'\\'\\n5. Paste the HTML between the quotes\\n6. Press Enter\\n7. Use browser\\'s Print > Save as PDF\\n\\nOr save the clipboard content to a .html file and open it!');
                 
-                // Cleanup after print dialog closes
+                // Reset button after 3 seconds
                 setTimeout(() => {
-                    formGroup.style.display = '';
-                    buttonGroup.style.display = '';
-                    note.remove();
-                }, 1000);
-            }, 100);
+                    copyHtmlBtn.textContent = originalText;
+                    copyHtmlBtn.style.background = '';
+                }, 3000);
+            } catch (error) {
+                console.error('Copy failed:', error);
+                alert('Failed to copy HTML. Error: ' + error.message);
+            }
         });
 
         window.addEventListener('message', event => {
@@ -719,8 +601,7 @@ https://github.com/owner/repo/pull/456"></textarea>
                     loading.style.display = 'block';
                     progressBar.style.display = 'block';
                     resultsDiv.innerHTML = '';
-                    pdfBtn.style.display = 'none';
-                    printBtn.style.display = 'none';
+                    copyHtmlBtn.style.display = 'none';
                     break;
 
                 case 'analysisProgress':
@@ -748,8 +629,7 @@ https://github.com/owner/repo/pull/456"></textarea>
                     analyzeBtn.disabled = false;
                     loading.style.display = 'none';
                     progressBar.style.display = 'none';
-                    pdfBtn.style.display = 'block';
-                    printBtn.style.display = 'block';
+                    copyHtmlBtn.style.display = 'block';
                     displayResults(message.results);
                     break;
 
