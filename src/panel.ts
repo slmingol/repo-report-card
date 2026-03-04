@@ -74,9 +74,9 @@ export class RepoReportCardPanel {
                     if (a.error && !b.error) return 1;
                     if (!a.error && b.error) return -1;
                     // Otherwise sort by score
-                    return b.score - a.score;
+                    return b.cleanlinessScore - a.cleanlinessScore;
                 })
-                .map(r => ({ repoName: r.repoName, score: r.score, hasError: !!r.error }));
+                .map(r => ({ repoName: r.repoName, cleanlinessScore: r.cleanlinessScore, hasError: !!r.error }));
 
             this._panel.webview.postMessage({
                 command: 'analysisComplete',
@@ -797,13 +797,13 @@ https://github.com/owner/repo/pull/456"></textarea>
                         \`;
                     } else {
                         // Normal display for successfully analyzed repos
-                        const grade = getLetterGrade(item.score);
+                        const grade = getLetterGrade(item.cleanlinessScore);
                         html += \`
                             <div class="ranking-item">
                                 <span class="rank">#\${index + 1}</span>
                                 <span style="flex: 1;">\${item.repoName}</span>
                                 <span class="grade grade-\${grade}" style="font-size: 1.5em; padding: 5px 15px;">\${grade}</span>
-                                <span style="margin-left: 15px; font-weight: bold;">\${item.score}/100</span>
+                                <span style="margin-left: 15px; font-weight: bold;">\${item.cleanlinessScore}/100</span>
                             </div>
                         \`;
                     }
@@ -813,8 +813,8 @@ https://github.com/owner/repo/pull/456"></textarea>
 
             // Individual reports
             data.analyses.forEach(analysis => {
-                const grade = getLetterGrade(analysis.score);
-                const quote = getSkinnerQuote(analysis.score);
+                const grade = getLetterGrade(analysis.cleanlinessScore);
+                const quote = getSkinnerQuote(analysis.cleanlinessScore);
 
                 html += \`<div class="repo-card">
                     <div class="repo-header">
@@ -824,7 +824,8 @@ https://github.com/owner/repo/pull/456"></textarea>
                         </div>
                         <div class="grade grade-\${grade}">\${grade}</div>
                     </div>
-                    <div style="text-align: center; font-size: 2em; margin: 20px 0;">\${analysis.score}/100</div>
+                    <div style="text-align: center; font-size: 2em; margin: 20px 0;">Clean Code Score: \${analysis.cleanlinessScore}/100</div>
+                    <div style="text-align: center; font-size: 2em; margin: 20px 0;">Overall Score: \${analysis.score}/100</div>
                 \`;
 
                 if (analysis.error) {
@@ -853,7 +854,7 @@ https://github.com/owner/repo/pull/456"></textarea>
                             <div class="assessment-title">Principal's Assessment: \${quote}</div>
                             <div class="summary">\${analysis.summary}</div>
                         </div>
-                        <h3>📝 Areas Requiring Attention (10 Points):</h3>
+                        <h3>📝 Areas Requiring Attention (5 Points):</h3>
                         <ul class="improvement-list">
                     \`;
 

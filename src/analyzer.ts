@@ -11,6 +11,7 @@ export interface RepoAnalysis {
     repoName: string;
     repoUrl: string;
     score: number;
+    cleanlinessScore: number;
     improvementPlan: ImprovementPoint[];
     summary: string;
     error?: string;
@@ -46,6 +47,7 @@ export async function analyzeRepositories(
                 repoName: url.split('/').pop() || 'unknown',
                 repoUrl: url,
                 score: 0,
+                cleanlinessScore: 0,
                 improvementPlan: [],
                 summary: '',
                 error: error.message
@@ -115,10 +117,20 @@ ${codeContext}
 
 ${focusGuidance}
 
+Here is a list of the criteria for clean code:
+1. Readability: The code is easy to read and comprehend. Variable, function, and class names are meaningful and self-explanatory; code is well-formatted and consistently styled.
+2. Simplicity: The code solves problems in the simplest possible way without unnecessary complexity or clever tricks.
+3. Consistency: The code follows a consistent style and conventions (naming, indentation, spacing, etc.) throughout the codebase.
+4. Maintainability: Code is organized and modular, making it easy to modify, extend, or fix bugs without introducing new issues.
+5. Documentation: The code is self-explanatory as much as possible, but essential comments and documentation are present where non-obvious logic occurs.
+6. No Duplicates (DRY Principle): Repeated or duplicated code is avoided. Common functionality is extracted and reused.
+7. Extensibility: The code can be extended with new functionality without extensive rewrites or breaking existing code.
+
 Please analyze this ${repoInfo.isPR ? 'pull request' : 'repository'} and provide:
 1. An overall quality score from 0-100
-2. A brief summary of the ${repoInfo.isPR ? 'changes\' strengths and weaknesses' : 'repository\'s strengths and weaknesses'}
-3. Exactly 10 specific improvement points, each with:
+2. A clean code score from 0-100 based on the criteria for clean code given
+3. A brief summary of the ${repoInfo.isPR ? 'changes\' strengths and weaknesses' : 'repository\'s strengths and weaknesses'}
+4. Exactly 5 specific improvement points, each with:
    - category: A short category name
    - description: Detailed description of the improvement
    - priority: 'High', 'Medium', or 'Low'
@@ -128,6 +140,7 @@ IMPORTANT: You MUST respond with ONLY valid JSON. Do not include any explanatory
 Required JSON format:
 {
   "score": <number 0-100>,
+  "cleanlinessScore": <number 0-100>,
   "summary": "<your summary>",
   "improvementPlan": [
     {
@@ -232,6 +245,9 @@ Return your response now as valid JSON:`;
         if (typeof analysis.score !== 'number') {
             throw new Error('Invalid response: missing or invalid "score" field');
         }
+        if (typeof analysis.cleanlinessScore !== 'number') {
+            throw new Error('Invalid response: missing or invalid "cleanlinessScore" field');
+        }
         if (typeof analysis.summary !== 'string') {
             throw new Error('Invalid response: missing or invalid "summary" field');
         }
@@ -243,6 +259,7 @@ Return your response now as valid JSON:`;
             repoName: repoInfo.name,
             repoUrl: repoInfo.url,
             score: analysis.score,
+            cleanlinessScore: analysis.cleanlinessScore,
             summary: analysis.summary,
             improvementPlan: analysis.improvementPlan.slice(0, 10)
         };
@@ -252,6 +269,7 @@ Return your response now as valid JSON:`;
             repoName: repoInfo.name,
             repoUrl: repoInfo.url,
             score: 0,
+            cleanlinessScore: 0,
             improvementPlan: [],
             summary: '',
             error: error.message

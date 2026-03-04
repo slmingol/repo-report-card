@@ -1,14 +1,50 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.cloneRepository = cloneRepository;
 exports.getRepoFiles = getRepoFiles;
 exports.getFileContent = getFileContent;
 exports.cleanupRepo = cleanupRepo;
 exports.cloneRepositoryWithPR = cloneRepositoryWithPR;
-const simple_git_1 = require("simple-git");
-const fs = require("fs");
-const path = require("path");
-const os = require("os");
+const simple_git_1 = __importDefault(require("simple-git"));
+const fs = __importStar(require("fs"));
+const path = __importStar(require("path"));
+const os = __importStar(require("os"));
 const CLONE_DIR = path.join(os.tmpdir(), 'repo-report-card');
 async function cloneRepository(repoUrl) {
     const repoName = repoUrl.split('/').pop()?.replace('.git', '') || 'repo';
@@ -20,6 +56,10 @@ async function cloneRepository(repoUrl) {
     const git = (0, simple_git_1.default)();
     await git.clone(repoUrl, repoPath, ['--depth', '1']);
     const files = await getRepoFiles(repoPath);
+    console.log(`Found ${files.length} files in repository ${repoName}`);
+    if (files.length === 0) {
+        throw new Error(`No analyzable code files found in repository. The repository may be empty or contain only non-code files.`);
+    }
     const fileContents = files.slice(0, 20).map(filePath => ({
         path: path.relative(repoPath, filePath),
         content: getFileContent(filePath, 5000)
@@ -33,8 +73,30 @@ async function cloneRepository(repoUrl) {
 }
 async function getRepoFiles(repoPath) {
     const files = [];
-    const extensions = ['.ts', '.tsx', '.js', '.jsx', '.py', '.java', '.go', '.rb', '.rs', '.c', '.cpp', '.h', '.cs', '.php'];
-    const ignoreDirs = ['node_modules', 'dist', 'build', '.next', 'coverage', '.git'];
+    const extensions = [
+        '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', // JavaScript/TypeScript
+        '.py', '.pyw', // Python
+        '.java', // Java
+        '.go', // Go
+        '.rb', '.rake', // Ruby
+        '.rs', // Rust
+        '.c', '.cpp', '.cc', '.cxx', '.h', '.hpp', // C/C++
+        '.cs', // C#
+        '.php', // PHP
+        '.swift', // Swift
+        '.kt', '.kts', // Kotlin
+        '.scala', // Scala
+        '.sh', '.bash', // Shell
+        '.sql', // SQL
+        '.yaml', '.yml', // YAML
+        '.json', // JSON
+        '.xml', // XML
+        '.tf', // Terraform
+        '.hcl', // HCL
+        '.dockerfile', '.Dockerfile' // Docker
+    ];
+    const ignoreDirs = ['node_modules', 'dist', 'build', '.next', 'coverage', '.git', 'vendor', 'target', '__pycache__', '.venv', 'venv'];
+    const specialFiles = ['Dockerfile', 'Makefile', 'Rakefile', 'Gemfile', 'Vagrantfile', 'Jenkinsfile'];
     function traverseDir(dir) {
         const items = fs.readdirSync(dir);
         for (const item of items) {
@@ -46,7 +108,9 @@ async function getRepoFiles(repoPath) {
                 }
             }
             else if (stat.isFile()) {
-                if (extensions.some(ext => item.endsWith(ext))) {
+                const hasMatchingExtension = extensions.some(ext => item.endsWith(ext));
+                const isSpecialFile = specialFiles.includes(item);
+                if (hasMatchingExtension || isSpecialFile) {
                     files.push(fullPath);
                 }
             }
@@ -94,9 +158,25 @@ async function cloneRepositoryWithPR(prUrl) {
     const gitRepo = (0, simple_git_1.default)(repoPath);
     await gitRepo.fetch('origin', `pull/${prNumber}/head:pr-${prNumber}`);
     await gitRepo.checkout(`pr-${prNumber}`);
+    // Fetch main branch with more depth to establish merge base
+    await gitRepo.fetch('origin', 'main:refs/remotes/origin/main', ['--depth', '50']);
     // Get the diff to find changed files
-    const diff = await gitRepo.diff(['origin/main...HEAD', '--name-only']);
-    const changedFiles = diff.split('\n').filter(f => f.trim());
+    let changedFiles = [];
+    try {
+        const diff = await gitRepo.diff(['origin/main...HEAD', '--name-only']);
+        changedFiles = diff.split('\n').filter(f => f.trim());
+    }
+    catch (error) {
+        // If three-dot diff fails (no merge base), try two-dot diff
+        try {
+            const diff = await gitRepo.diff(['origin/main..HEAD', '--name-only']);
+            changedFiles = diff.split('\n').filter(f => f.trim());
+        }
+        catch (fallbackError) {
+            // If diff still fails, we'll analyze all files
+            console.warn('Unable to determine changed files, analyzing all files');
+        }
+    }
     // Get the full file list for context, but prioritize changed files
     const allFiles = await getRepoFiles(repoPath);
     // Prioritize changed files and include up to 20 files total
