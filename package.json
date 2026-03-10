@@ -2,7 +2,7 @@
   "name": "repo-report-card",
   "displayName": "Code Quality Report Card",
   "description": "Grade repositories and pull requests with Principal Skinner using GitHub Copilot",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "publisher": "slmingol",
   "repository": {
     "type": "git",
