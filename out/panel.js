@@ -36,6 +36,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.RepoReportCardPanel = void 0;
 const vscode = __importStar(require("vscode"));
 const fs = __importStar(require("fs"));
+const os = __importStar(require("os"));
 const path = __importStar(require("path"));
 const analyzer_1 = require("./analyzer");
 const packageJson = __importStar(require("../package.json"));
@@ -64,6 +65,9 @@ class RepoReportCardPanel {
                 case 'analyze':
                     await this._handleAnalyze(message.urls);
                     break;
+                case 'savePdf':
+                    await this._handleSavePdf(message.html);
+                    break;
             }
         }, null, this._disposables);
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
@@ -81,9 +85,16 @@ class RepoReportCardPanel {
             });
             // Sort by score - include all results (errors shown separately)
             const ranking = results
-                .filter(r => !r.error)
-                .sort((a, b) => b.cleanlinessScore - a.cleanlinessScore)
-                .map(r => ({ repoName: r.repoName, cleanlinessScore: r.cleanlinessScore }));
+                .sort((a, b) => {
+                // Put errors at the end
+                if (a.error && !b.error)
+                    return 1;
+                if (!a.error && b.error)
+                    return -1;
+                // Otherwise sort by score
+                return b.cleanlinessScore - a.cleanlinessScore;
+            })
+                .map(r => ({ repoName: r.repoName, cleanlinessScore: r.cleanlinessScore, hasError: !!r.error }));
             this._panel.webview.postMessage({
                 command: 'analysisComplete',
                 results: { analyses: results, ranking }
@@ -94,6 +105,29 @@ class RepoReportCardPanel {
                 command: 'analysisError',
                 error: error.message
             });
+        }
+    }
+    async _handleSavePdf(html) {
+        try {
+            const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'repo-report-card-'));
+            const tmpFile = path.join(tmpDir, 'report.html');
+            fs.writeFileSync(tmpFile, html, 'utf8');
+            await vscode.env.openExternal(vscode.Uri.file(tmpFile));
+            const printShortcut = process.platform === 'darwin' ? 'Cmd+P' : 'Ctrl+P';
+            vscode.window.showInformationMessage(`Report opened in your browser. Use the Print dialog (${printShortcut}) and select "Save as PDF" to export.`);
+            // Clean up the temp file after a delay to allow the browser to load it
+            setTimeout(() => {
+                try {
+                    fs.unlinkSync(tmpFile);
+                    fs.rmdirSync(tmpDir);
+                }
+                catch {
+                    // Ignore cleanup errors
+                }
+            }, 60000);
+        }
+        catch (error) {
+            vscode.window.showErrorMessage(`Failed to open report for PDF export: ${error.message}`);
         }
     }
     _getHtmlContent() {
@@ -423,20 +457,12 @@ class RepoReportCardPanel {
             margin-bottom: 20px;
         }
 
-        #pdfBtn {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        #savePdfBtn {
+            background: linear-gradient(135deg, #6c63ff 0%, #4834df 100%);
         }
 
-        #pdfBtn:hover {
-            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
-        }
-
-        #printBtn {
-            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-        }
-
-        #printBtn:hover {
-            box-shadow: 0 5px 15px rgba(0, 123, 255, 0.4);
+        #savePdfBtn:hover {
+            box-shadow: 0 5px 15px rgba(108, 99, 255, 0.4);
         }
 
         /* Print styles */
@@ -513,8 +539,7 @@ https://github.com/owner/repo/pull/456"></textarea>
 
         <div class="button-group">
             <button id="analyzeBtn">🎓 Grade and Analyze</button>
-            <button id="pdfBtn" style="display: none;">📄 Save to PDF (html2pdf)</button>
-            <button id="printBtn" style="display: none;">🖨️ Print to PDF (Browser)</button>
+            <button id="savePdfBtn" style="display: none;">📄 Save as PDF</button>
         </div>
 
         <div id="loading" style="display: none;">
@@ -537,12 +562,10 @@ https://github.com/owner/repo/pull/456"></textarea>
         <div id="results"></div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script>
         const vscode = acquireVsCodeApi();
         const analyzeBtn = document.getElementById('analyzeBtn');
-        const pdfBtn = document.getElementById('pdfBtn');
-        const printBtn = document.getElementById('printBtn');
+        const savePdfBtn = document.getElementById('savePdfBtn');
         const repoUrlsInput = document.getElementById('repoUrls');
         const loading = document.getElementById('loading');
         const resultsDiv = document.getElementById('results');
@@ -566,155 +589,26 @@ https://github.com/owner/repo/pull/456"></textarea>
             vscode.postMessage({ command: 'analyze', urls });
         });
 
-        pdfBtn.addEventListener('click', async () => {
-            const element = document.querySelector('.container');
-            
-            // Show generating message
-            const originalText = pdfBtn.textContent;
-            pdfBtn.textContent = '⏳ Generating PDF...';
-            pdfBtn.disabled = true;
-            
-            // Hide form and buttons before generating PDF
-            const formGroup = document.querySelector('.form-group');
-            const buttonGroup = document.querySelector('.button-group');
-            const loadingDiv = document.getElementById('loading');
-            const progressBarDiv = document.getElementById('progressBar');
-            
-            formGroup.style.display = 'none';
-            buttonGroup.style.display = 'none';
-            loadingDiv.style.display = 'none';
-            progressBarDiv.style.display = 'none';
-            
-            // Set body background to white for PDF
-            const originalBodyBg = document.body.style.background;
-            document.body.style.background = 'white';
-            
-            // Ensure all images are loaded
-            const images = element.querySelectorAll('img');
-            const imageLoadPromises = Array.from(images).map(img => {
-                if (img.complete) return Promise.resolve();
-                return new Promise((resolve) => {
-                    img.onload = resolve;
-                    img.onerror = resolve;
-                    setTimeout(resolve, 1000); // Timeout after 1 second
-                });
-            });
-            
-            await Promise.all(imageLoadPromises);
-            
-            // Add PDF-specific class to improve text rendering
-            element.classList.add('pdf-export');
-            
-            // Force text normalization to prevent spacing issues
-            const textElements = element.querySelectorAll('.summary, .improvement-item, .assessment-title, .repo-name');
-            textElements.forEach(el => {
-                el.style.letterSpacing = '0px';
-                el.style.wordSpacing = '0px';
-            });
-            
-            // Wait for DOM to stabilize and ensure content is visible
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            // Extensive debugging
-            console.log('=== PDF GENERATION DEBUG ===');
-            console.log('Element:', element);
-            console.log('Element tagName:', element.tagName);
-            console.log('Element scrollHeight:', element.scrollHeight);
-            console.log('Element offsetHeight:', element.offsetHeight);
-            console.log('Element clientHeight:', element.clientHeight);
-            console.log('Element innerHTML length:', element.innerHTML.length);
-            console.log('Element has content:', element.innerHTML.length > 0);
-            console.log('Results div content:', resultsDiv.innerHTML.substring(0, 200));
-            console.log('Number of repo-cards:', element.querySelectorAll('.repo-card').length);
-            console.log('Window size:', window.innerWidth, 'x', window.innerHeight);
-            
-            // Validate we have content to export
-            if (element.innerHTML.length < 100 || resultsDiv.innerHTML.length < 100) {
-                alert('Error: No content to export. Please analyze repositories first.');
-                throw new Error('No content to export');
-            }
-            
-            try {
-                const opt = {
-                    margin: 0.5,
-                    filename: 'repo-report-card.pdf',
-                    image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { 
-                        scale: 2,
-                        useCORS: true,
-                        allowTaint: true,
-                        backgroundColor: '#ffffff',
-                        logging: true,
-                        width: element.scrollWidth,
-                        height: element.scrollHeight,
-                        x: 0,
-                        y: 0
-                    },
-                    jsPDF: { 
-                        unit: 'in', 
-                        format: 'letter', 
-                        orientation: 'portrait'
-                    }
-                };
-                
-                console.log('Starting PDF generation with options:', opt);
-                const worker = html2pdf().set(opt).from(element);
-                await worker.save();
-                console.log('PDF generation completed successfully');
-            } catch (error) {
-                console.error('PDF generation error:', error);
-                alert('Error generating PDF: ' + error.message + '\\n\\nPlease check the console for details.');
-            } finally {
-                // Restore visibility and remove PDF class after PDF generation
-                formGroup.style.display = '';
-                buttonGroup.style.display = '';
-                progressBarDiv.style.display = 'none';
-                element.classList.remove('pdf-export');
-                
-                // Restore body background
-                document.body.style.background = originalBodyBg;
-                
-                // Reset text spacing
-                textElements.forEach(el => {
-                    el.style.letterSpacing = '';
-                    el.style.wordSpacing = '';
-                });
-                
-                // Restore button
-                pdfBtn.textContent = originalText;
-                pdfBtn.disabled = false;
-            }
-        });
+        savePdfBtn.addEventListener('click', () => {
+            const container = document.querySelector('.container');
+            const styles = document.querySelector('style').innerHTML;
 
-        printBtn.addEventListener('click', () => {
-            // Hide form and buttons before printing
-            const formGroup = document.querySelector('.form-group');
-            const buttonGroup = document.querySelector('.button-group');
-            const loadingDiv = document.getElementById('loading');
-            const progressBarDiv = document.getElementById('progressBar');
-            
-            formGroup.style.display = 'none';
-            buttonGroup.style.display = 'none';
-            loadingDiv.style.display = 'none';
-            progressBarDiv.style.display = 'none';
-            
-            // Add a note about using browser print dialog
-            const note = document.createElement('div');
-            note.style.cssText = 'background: #fff3cd; border: 1px solid #ffc107; padding: 10px; margin: 10px 0; border-radius: 5px; text-align: center;';
-            note.innerHTML = '<strong>📄 Print Dialog Instructions:</strong><br>In the print dialog, select "Save as PDF" as the destination to save this report as a PDF file.';
-            document.querySelector('.container').insertBefore(note, document.querySelector('.container').firstChild);
-            
-            // Trigger browser print dialog
-            setTimeout(() => {
-                window.print();
-                
-                // Cleanup after print dialog closes
-                setTimeout(() => {
-                    formGroup.style.display = '';
-                    buttonGroup.style.display = '';
-                    note.remove();
-                }, 1000);
-            }, 100);
+            const fullHtml = \`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repo Report Card</title>
+    <style>\${styles}</style>
+</head>
+<body>
+    <div class="container">
+        \${container.innerHTML}
+    </div>
+</body>
+</html>\`;
+
+            vscode.postMessage({ command: 'savePdf', html: fullHtml });
         });
 
         window.addEventListener('message', event => {
@@ -726,8 +620,7 @@ https://github.com/owner/repo/pull/456"></textarea>
                     loading.style.display = 'block';
                     progressBar.style.display = 'block';
                     resultsDiv.innerHTML = '';
-                    pdfBtn.style.display = 'none';
-                    printBtn.style.display = 'none';
+                    savePdfBtn.style.display = 'none';
                     break;
 
                 case 'analysisProgress':
@@ -755,8 +648,7 @@ https://github.com/owner/repo/pull/456"></textarea>
                     analyzeBtn.disabled = false;
                     loading.style.display = 'none';
                     progressBar.style.display = 'none';
-                    pdfBtn.style.display = 'block';
-                    printBtn.style.display = 'block';
+                    savePdfBtn.style.display = 'block';
                     displayResults(message.results);
                     break;
 
@@ -792,17 +684,6 @@ https://github.com/owner/repo/pull/456"></textarea>
             if (data.ranking.length > 0) {
                 html += '<div class="ranking"><h2>🏆 Rankings</h2>';
                 data.ranking.forEach((item, index) => {
-<<<<<<< HEAD
-                    const grade = getLetterGrade(item.cleanlinessScore);
-                    html += \`
-                        <div class= "ranking-item">
-                            <span class="rank">#\${index + 1}</span>
-                            <span style="flex: 1;">\${item.repoName}</span>
-                            <span class="grade grade-\${grade}" style="font-size: 1.5em; padding: 5px 15px;">\${grade}</span>
-                            <span style="margin-left: 15px; font-weight: bold;">\${item.cleanlinessScore}/100</span>
-                        </div>
-                    \`;
-=======
                     if (item.hasError) {
                         // Show error repos with special styling
                         html += \`
@@ -815,17 +696,16 @@ https://github.com/owner/repo/pull/456"></textarea>
                         \`;
                     } else {
                         // Normal display for successfully analyzed repos
-                        const grade = getLetterGrade(item.score);
+                        const grade = getLetterGrade(item.cleanlinessScore);
                         html += \`
                             <div class="ranking-item">
                                 <span class="rank">#\${index + 1}</span>
                                 <span style="flex: 1;">\${item.repoName}</span>
                                 <span class="grade grade-\${grade}" style="font-size: 1.5em; padding: 5px 15px;">\${grade}</span>
-                                <span style="margin-left: 15px; font-weight: bold;">\${item.score}/100</span>
+                                <span style="margin-left: 15px; font-weight: bold;">\${item.cleanlinessScore}/100</span>
                             </div>
                         \`;
                     }
->>>>>>> ff2b0e8376df55849114ba383e90e26c273a36a2
                 });
                 html += '</div>';
             }
@@ -833,7 +713,6 @@ https://github.com/owner/repo/pull/456"></textarea>
             // Individual reports
             data.analyses.forEach(analysis => {
                 const grade = getLetterGrade(analysis.cleanlinessScore);
-                const overallGrade = getLetterGrade(analysis.score)
                 const quote = getSkinnerQuote(analysis.cleanlinessScore);
 
                 html += \`<div class="repo-card">
