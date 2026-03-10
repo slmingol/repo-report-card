@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import { analyzeRepositories, RepoAnalysis } from './analyzer';
 import * as packageJson from '../package.json';
@@ -45,6 +46,9 @@ export class RepoReportCardPanel {
                     case 'analyze':
                         await this._handleAnalyze(message.urls);
                         break;
+                    case 'savePdf':
+                        await this._handleSavePdf(message.html);
+                        break;
                 }
             },
             null,
@@ -87,6 +91,30 @@ export class RepoReportCardPanel {
                 command: 'analysisError',
                 error: error.message
             });
+        }
+    }
+
+    private async _handleSavePdf(html: string) {
+        try {
+            const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'repo-report-card-'));
+            const tmpFile = path.join(tmpDir, 'report.html');
+            fs.writeFileSync(tmpFile, html, 'utf8');
+            await vscode.env.openExternal(vscode.Uri.file(tmpFile));
+            const printShortcut = process.platform === 'darwin' ? 'Cmd+P' : 'Ctrl+P';
+            vscode.window.showInformationMessage(
+                `Report opened in your browser. Use the Print dialog (${printShortcut}) and select "Save as PDF" to export.`
+            );
+            // Clean up the temp file after a delay to allow the browser to load it
+            setTimeout(() => {
+                try {
+                    fs.unlinkSync(tmpFile);
+                    fs.rmdirSync(tmpDir);
+                } catch {
+                    // Ignore cleanup errors
+                }
+            }, 60000);
+        } catch (error: any) {
+            vscode.window.showErrorMessage(`Failed to open report for PDF export: ${error.message}`);
         }
     }
 
@@ -416,11 +444,11 @@ export class RepoReportCardPanel {
             margin-bottom: 20px;
         }
 
-        #copyHtmlBtn {
+        #savePdfBtn {
             background: linear-gradient(135deg, #6c63ff 0%, #4834df 100%);
         }
 
-        #copyHtmlBtn:hover {
+        #savePdfBtn:hover {
             box-shadow: 0 5px 15px rgba(108, 99, 255, 0.4);
         }
 
@@ -498,7 +526,7 @@ https://github.com/owner/repo/pull/456"></textarea>
 
         <div class="button-group">
             <button id="analyzeBtn">🎓 Grade and Analyze</button>
-            <button id="copyHtmlBtn" style="display: none;">📋 Copy as HTML (Open in Browser)</button>
+            <button id="savePdfBtn" style="display: none;">📄 Save as PDF</button>
         </div>
 
         <div id="loading" style="display: none;">
@@ -521,11 +549,10 @@ https://github.com/owner/repo/pull/456"></textarea>
         <div id="results"></div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script>
         const vscode = acquireVsCodeApi();
         const analyzeBtn = document.getElementById('analyzeBtn');
-        const copyHtmlBtn = document.getElementById('copyHtmlBtn');
+        const savePdfBtn = document.getElementById('savePdfBtn');
         const repoUrlsInput = document.getElementById('repoUrls');
         const loading = document.getElementById('loading');
         const resultsDiv = document.getElementById('results');
@@ -549,47 +576,26 @@ https://github.com/owner/repo/pull/456"></textarea>
             vscode.postMessage({ command: 'analyze', urls });
         });
 
-        copyHtmlBtn.addEventListener('click', async () => {
-            try {
-                // Create a standalone HTML document with all styles inline
-                const container = document.querySelector('.container');
-                const styles = document.querySelector('style').innerHTML;
-                
-                const fullHtml = `<!DOCTYPE html>
+        savePdfBtn.addEventListener('click', () => {
+            const container = document.querySelector('.container');
+            const styles = document.querySelector('style').innerHTML;
+
+            const fullHtml = \`<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Repo Report Card</title>
-    <style>${styles}</style>
+    <style>\${styles}</style>
 </head>
 <body>
     <div class="container">
-        ${container.innerHTML}
+        \${container.innerHTML}
     </div>
 </body>
-</html>`;
-                
-                // Copy to clipboard
-                await navigator.clipboard.writeText(fullHtml);
-                
-                // Show success message
-                const originalText = copyHtmlBtn.textContent;
-                copyHtmlBtn.textContent = '✅ Copied! Paste in browser';
-                copyHtmlBtn.style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
-                
-                // Show instructions
-                alert('✅ HTML copied to clipboard!\\n\\nNext steps:\\n1. Open a new browser tab\\n2. Press Ctrl+Shift+I (or Cmd+Opt+I on Mac) to open Dev Tools\\n3. Go to Console tab\\n4. Type: document.body.innerHTML = \\'\\'\\n5. Paste the HTML between the quotes\\n6. Press Enter\\n7. Use browser\\'s Print > Save as PDF\\n\\nOr save the clipboard content to a .html file and open it!');
-                
-                // Reset button after 3 seconds
-                setTimeout(() => {
-                    copyHtmlBtn.textContent = originalText;
-                    copyHtmlBtn.style.background = '';
-                }, 3000);
-            } catch (error) {
-                console.error('Copy failed:', error);
-                alert('Failed to copy HTML. Error: ' + error.message);
-            }
+</html>\`;
+
+            vscode.postMessage({ command: 'savePdf', html: fullHtml });
         });
 
         window.addEventListener('message', event => {
@@ -601,7 +607,7 @@ https://github.com/owner/repo/pull/456"></textarea>
                     loading.style.display = 'block';
                     progressBar.style.display = 'block';
                     resultsDiv.innerHTML = '';
-                    copyHtmlBtn.style.display = 'none';
+                    savePdfBtn.style.display = 'none';
                     break;
 
                 case 'analysisProgress':
@@ -629,7 +635,7 @@ https://github.com/owner/repo/pull/456"></textarea>
                     analyzeBtn.disabled = false;
                     loading.style.display = 'none';
                     progressBar.style.display = 'none';
-                    copyHtmlBtn.style.display = 'block';
+                    savePdfBtn.style.display = 'block';
                     displayResults(message.results);
                     break;
 
