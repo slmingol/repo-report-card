@@ -31,7 +31,7 @@ jobs:
         run: npm ci
       - name: Bump version and create tag
         id: version
-        uses: phips28/gh-action-bump-version@v10.1.1
+        uses: phips28/gh-action-bump-version@v10.1.2
         with:
           tag-prefix: 'v'
       - name: Install vsce
