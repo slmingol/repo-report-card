@@ -72,7 +72,7 @@ endif
 	@tmpfile=$$(mktemp); \
 	sed -n '/## Technical Complexity Rubric/,$$p' README.md > "$$tmpfile"; \
 	principal-skinner "$(REPO)" $(_SINCE_ARG) --budget $(BUDGET) \
-	  | claude "$$(cat $$tmpfile)"; \
+	  | claude "$$(cat $$tmpfile)" 2>/dev/null; \
 	rm -f "$$tmpfile"
 	@printf "$(GR)✓$(R) $(REPO) scored\n\n"
 
@@ -93,7 +93,7 @@ score-all: check $(REPOS_FILE)
 	  repo="$$1"; rubric="$$2"; since_arg="$$3"; budget="$$4"; \
 	  printf "$(CY)▶$(R) $(B)$$repo$(R)\n"; \
 	  principal-skinner "$$repo" $$since_arg --budget "$$budget" \
-	    | claude "$$(cat $$rubric)" \
+	    | claude "$$(cat $$rubric)" 2>/dev/null \
 	    && printf "$(GR)✓$(R) $$repo\n" \
 	    || printf "$(RD)✗$(R) $$repo $(RD)failed$(R)\n"; \
 	}; \
