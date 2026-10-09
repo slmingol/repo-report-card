@@ -3,6 +3,7 @@ import * as path from 'path';
 
 const MAX_TREE = 500;
 const MAX_OMITTED = 200;
+const MAX_DEPTH = 64;
 
 const IGNORE_DIRS = new Set([
     '.git', 'node_modules', 'bower_components', 'jspm_packages', 'dist', 'build', 'out', '.next', '.nuxt',
@@ -51,7 +52,11 @@ export function walk(root: string): WalkResult {
     const files: FileEntry[] = [];
     const omitted: string[] = [];
 
-    const visit = (rel: string) => {
+    const visit = (rel: string, depth: number) => {
+        if (depth > MAX_DEPTH) {
+            omitted.push(`${rel}/`);
+            return;
+        }
         let entries: fs.Dirent[];
         try {
             entries = fs.readdirSync(path.join(root, rel), { withFileTypes: true });
@@ -67,7 +72,7 @@ export function walk(root: string): WalkResult {
                     if (e.name !== '.git' || rel) omitted.push(`${p}/`);
                     continue;
                 }
-                visit(p);
+                visit(p, depth + 1);
             } else if (e.isFile()) {
                 if (LOCKFILES.has(e.name) || GENERATED.some((re) => re.test(p))) {
                     omitted.push(p);
@@ -84,7 +89,7 @@ export function walk(root: string): WalkResult {
         }
     };
 
-    visit('');
+    visit('', 0);
     return { files, omitted };
 }
 

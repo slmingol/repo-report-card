@@ -74,14 +74,15 @@ async function main(): Promise<void> {
     log(`fetching metadata for ${ref.owner}/${ref.repo}`);
     const metadata = await repoView(ref);
 
-    const dir = makeTempDir();
-    const cleanup = () => removeDir(dir);
+    let dir: string | undefined;
+    const cleanup = () => dir && removeDir(dir);
     const onSignal = (sig: NodeJS.Signals) => {
         cleanup();
         process.exit(sig === 'SIGINT' ? 130 : 143);
     };
     process.once('SIGINT', onSignal);
     process.once('SIGTERM', onSignal);
+    dir = makeTempDir();
 
     try {
         log('cloning');

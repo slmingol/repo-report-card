@@ -106,7 +106,8 @@ export function selectSamples(root: string, files: FileEntry[], budget: number):
         const text = readText(root, f.path);
         if (text === null || !text.trim()) continue;
         const cap = Math.min(perFileCap, remaining);
-        const content = text.length > cap ? text.slice(0, cap) : text;
+        let content = text.length > cap ? text.slice(0, cap) : text;
+        if (content.length < text.length && /[\uD800-\uDBFF]$/.test(content)) content = content.slice(0, -1);
         samples.push({ path: f.path, content, truncated: content.length < text.length });
         used += content.length;
     }
