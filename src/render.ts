@@ -154,22 +154,20 @@ function loadSkinnerImages(): string[] {
 // ── Extraction ────────────────────────────────────────────────────────────────
 
 function extractSection(html: string, idx: number): Section {
-    const nameMatch = html.match(/<h1[^>]*class="project-name"[^>]*>([\s\S]*?)<\/h1>/i);
+    const nameMatch =
+        html.match(/<h1[^>]*class="project-name"[^>]*>([\s\S]*?)<\/h1>/i) ||
+        html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
     const name = nameMatch ? nameMatch[1].replace(/<[^>]+>/g, '').trim() : `Team ${idx + 1}`;
 
-    const scoreMatch = html.match(/<span[^>]*class="big"[^>]*>(\d+)<\/span>/i);
+    const scoreMatch =
+        html.match(/<span[^>]*class="big"[^>]*>(\d+)<\/span>/i) ||
+        html.match(/<span[^>]*class="num"[^>]*>(\d+)<\/span>/i) ||
+        html.match(/>\s*(\d+)\s*<[^>]*>\s*\/\s*25/);
     const score = scoreMatch ? parseInt(scoreMatch[1]) : 0;
-
-    // Extract body: strip <head>, strip closing </body></html>, strip big script blocks
-    let body = html
-        .replace(/^[\s\S]*?<body[^>]*>/i, '')
-        .replace(/<\/body>[\s\S]*$/i, '')
-        .replace(/<script[^>]*>\s*(?:const SKINNER_IMGS|\/\/ Restructure)[\s\S]*?<\/script>/gi, '')
-        .trim();
 
     const slug = slugify(name, idx);
     const grade = gradeFromScore(score);
-    return { slug, name, score, grade, body };
+    return { slug, name, score, grade, body: html };
 }
 
 // ── Scoring ───────────────────────────────────────────────────────────────────
@@ -208,9 +206,37 @@ const GRADE_BG: Record<string, string> = {
     A: '#D1FAE5', B: '#CFFAFE', C: '#FEF3C7', D: '#FFEDD5', F: '#FEE2E2',
 };
 
-function buildCombinedHtml(sections: Section[], skinnerImgs: string[]): string {
-    const imgsJson = JSON.stringify(skinnerImgs);
+function injectSkinnerScript(html: string, imgs: string[]): string {
+    const js = `<script>
+(function(){
+  var imgs=${JSON.stringify(imgs)};
+  function go(){
+    if(imgs.length){
+      document.querySelectorAll('.skinner-wrap').forEach(function(w){
+        if(w.querySelector('img'))return;
+        var img=document.createElement('img');
+        img.className='skinner-img';img.alt='Principal Skinner';
+        img.src=imgs[Math.floor(Math.random()*imgs.length)];
+        w.appendChild(img);
+      });
+    }
+    document.querySelectorAll('.quip').forEach(function(q){
+      var lbl=q.querySelector('.quip-label'),txt=q.querySelector('.quip-text'),
+          cap=q.querySelector('.quip-caption'),wrap=q.querySelector('.skinner-wrap');
+      if(!lbl||!txt||!wrap)return;
+      var r=document.createElement('div');r.className='quip-right';
+      r.appendChild(lbl);r.appendChild(txt);if(cap)r.appendChild(cap);
+      q.innerHTML='';q.appendChild(wrap);q.appendChild(r);
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);
+  else go();
+})();
+<\/script>`;
+    return html.replace(/<\/body>/i, js + '</body>');
+}
 
+function buildCombinedHtml(sections: Section[], skinnerImgs: string[]): string {
     const sidebarItems = sections.map(s => {
         const color = GRADE_COLOR[s.grade] ?? '#566079';
         const bg = GRADE_BG[s.grade] ?? '#F1F5F9';
@@ -223,10 +249,15 @@ function buildCombinedHtml(sections: Section[], skinnerImgs: string[]): string {
 </a>`;
     }).join('\n');
 
-    const contentSections = sections.map(s => `
+    const contentSections = sections.map(s => {
+        const injected = injectSkinnerScript(s.body, skinnerImgs);
+        const srcdoc = injected.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+        return `
 <section id="${s.slug}" class="team-section">
-${s.body}
-</section>`).join('\n');
+  <iframe class="scorecard-frame" srcdoc="${srcdoc}"
+    title="${escHtml(s.name)}" scrolling="no" frameborder="0"></iframe>
+</section>`;
+    }).join('\n');
 
     return `<!doctype html>
 <html lang="en">
@@ -404,40 +435,18 @@ body {
   min-width: 0;
 }
 .team-section {
-  max-width: 820px;
-  padding: 32px 24px 48px;
   border-bottom: 3px solid var(--border);
+  overflow: hidden;
 }
 .team-section:last-child { border-bottom: none; }
+.scorecard-frame {
+  width: 100%;
+  border: none;
+  display: block;
+  min-height: 600px;
+}
 
-/* ── Passthrough styles from per-repo scorecards ── */
-.header { padding-block-end: 24px; border-bottom: 1px solid var(--border); margin-block-end: 20px; }
-.event-label { font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); display: block; margin-block-end: 8px; }
-.project-name { font-family: var(--font-head); font-size: clamp(22px,5vw,32px); font-weight: 800; line-height: 1.15; color: var(--fg); margin: 0 0 4px; text-wrap: balance; }
-.project-sub { font-size: 14px; color: var(--fg-muted); font-weight: 300; font-style: italic; margin: 0 0 12px; }
-.meta-row { display: flex; flex-wrap: wrap; gap: 10px 20px; font-size: 13px; color: var(--fg-muted); }
-.meta-row span::before { content: "· "; }
-.meta-row span:first-child::before { content: ""; }
-.quip { background: var(--quip-bg); border: 1px solid var(--quip-bdr); border-left: 3px solid var(--quip); border-radius: var(--r); padding: 16px; margin-block-end: 20px; display: flex; align-items: center; gap: 20px; }
-.quip-right { flex: 1; display: flex; flex-direction: column; gap: 8px; justify-content: center; }
-.quip-label { font-family: var(--font-mono); font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--quip); white-space: nowrap; }
-.quip-text { font-size: 13px; font-style: italic; color: var(--fg-muted); line-height: 1.55; }
-.skinner-wrap { flex-shrink: 0; line-height: 0; }
-.skinner-img { height: 220px; width: auto; display: block; mix-blend-mode: screen; }
-.quip-caption { font-family: var(--font-mono); font-size: 10px; color: var(--quip); opacity: .7; font-style: normal; }
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-block-end: 20px; }
-.stat { background: var(--surface-2); border-radius: var(--r); padding: 12px 14px; text-align: center; }
-.stat .num { font-family: var(--font-head); font-size: 22px; font-weight: 800; color: var(--fg); font-variant-numeric: tabular-nums; line-height: 1.2; }
-.stat .lbl { font-size: 11px; color: var(--fg-dim); text-transform: uppercase; letter-spacing: .07em; font-weight: 500; margin-block-start: 2px; }
-.score-hero { display: flex; align-items: center; gap: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; margin-block-end: 24px; flex-wrap: wrap; }
-.total-score { display: flex; align-items: baseline; gap: 4px; flex-shrink: 0; }
-.total-score .big { font-family: var(--font-head); font-size: clamp(48px,10vw,68px); font-weight: 800; line-height: 1; color: var(--score); font-variant-numeric: tabular-nums; }
-.total-score .denom { font-family: var(--font-mono); font-size: 20px; color: var(--fg-dim); }
-.score-divider { width: 1px; height: 52px; background: var(--border); flex-shrink: 0; }
-.score-breakdown { flex: 1; min-width: 180px; }
-.score-breakdown .label { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--fg-dim); font-weight: 500; margin-block-end: 8px; }
-.mini-bars { display: flex; flex-direction: column; gap: 4px; }
-.mini-bar-row { display: flex; align-items: center; gap: 8px; }
+/* (no passthrough styles needed — each scorecard renders in its own iframe) */
 .dim-abbr { font-family: var(--font-mono); font-size: 10px; color: var(--fg-dim); width: 36px; flex-shrink: 0; }
 .mini-bar-track { flex: 1; height: 6px; background: var(--bar-track); border-radius: 3px; overflow: hidden; }
 .mini-bar-fill { height: 100%; background: var(--max); border-radius: 3px; }
@@ -493,32 +502,17 @@ ${contentSections}
 </main>
 
 <script>
-const SKINNER_IMGS = ${imgsJson};
-
-// Assign random Skinner images to .skinner-wrap elements
-document.querySelectorAll('.skinner-wrap').forEach(wrap => {
-  if (!SKINNER_IMGS.length) return;
-  const img = document.createElement('img');
-  img.className = 'skinner-img';
-  img.alt = 'Principal Skinner';
-  img.src = SKINNER_IMGS[Math.floor(Math.random() * SKINNER_IMGS.length)];
-  wrap.appendChild(img);
-});
-
-// Fix up quip structure (each scorecard may have inline structure)
-document.querySelectorAll('.quip').forEach(quip => {
-  const label   = quip.querySelector('.quip-label');
-  const text    = quip.querySelector('.quip-text');
-  const caption = quip.querySelector('.quip-caption');
-  const wrap    = quip.querySelector('.skinner-wrap');
-  if (!label || !text || !wrap) return;
-  const right = document.createElement('div');
-  right.className = 'quip-right';
-  if (label) right.appendChild(label);
-  if (text)  right.appendChild(text);
-  if (caption) right.appendChild(caption);
-  quip.innerHTML = '';
-  quip.append(wrap, right);
+// Auto-size iframes to their content height
+function resizeFrame(f) {
+  try {
+    var h = f.contentDocument.documentElement.scrollHeight;
+    if (h > 200) f.style.height = h + 'px';
+  } catch(e) {}
+}
+document.querySelectorAll('.scorecard-frame').forEach(function(f) {
+  f.addEventListener('load', function() { resizeFrame(this); });
+  // fallback for already-loaded frames
+  if (f.contentDocument && f.contentDocument.readyState === 'complete') resizeFrame(f);
 });
 
 // Sidebar search
