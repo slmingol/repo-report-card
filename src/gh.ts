@@ -163,8 +163,8 @@ export async function commitStats(dir: string, since: Date | null): Promise<Acti
         since: since ? since.toISOString().slice(0, 10) : null,
         commits: inWindow.length,
         contributors: new Set(inWindow.map((c) => c.email)).size,
-        first_commit: times.length ? day(Math.min(...times)) : null,
-        last_commit: times.length ? day(Math.max(...times)) : null,
+        first_commit: times.length ? day(times.reduce((a, b) => Math.min(a, b))) : null,
+        last_commit: times.length ? day(times.reduce((a, b) => Math.max(a, b))) : null,
         commits_before_since: since ? all.length - inWindow.length : null,
         total_commits: all.length,
     };
