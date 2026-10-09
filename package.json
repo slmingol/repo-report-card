@@ -1,10 +1,10 @@
 {
   "name": "repo-report-card",
-  "description": "Principal Skinner: build a factual JSON dossier of a GitHub repo for Claude to judge",
+  "description": "Hackathon judging pipeline: JSON dossier builder + HTML scorecard renderer, scored by Claude as Principal Skinner",
   "version": "2.0.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/slmingol/repo-report-card-extension.git"
+    "url": "https://github.com/slmingol/repo-report-card.git"
   },
   "engines": {
     "node": ">=20"
