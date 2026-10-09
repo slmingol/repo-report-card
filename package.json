@@ -11,10 +11,13 @@
   },
   "bin": {
     "principal-skinner": "./out/cli.js",
-    "skinner": "./out/cli.js"
+    "skinner": "./out/cli.js",
+    "skinner-render": "./out/render.js"
   },
   "files": [
-    "out/**/*.js"
+    "out/**/*.js",
+    "imgs/cropped/*.png",
+    "README.md"
   ],
   "scripts": {
     "build": "tsc -p ./",
