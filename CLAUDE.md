@@ -93,7 +93,7 @@ are injected into empty `.skinner-wrap` divs at runtime — leave them empty.
 *, *::before, *::after { box-sizing: border-box; }
 body {
   font-family: var(--font-body);
-  font-size: 15px;
+  font-size: 17px;
   line-height: 1.6;
   color: var(--fg);
   background: var(--bg);
