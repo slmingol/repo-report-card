@@ -11,12 +11,12 @@ MG := \033[35m
 RD := \033[31m
 
 # ── Config ────────────────────────────────────────────────────────────────────
-SINCE      ?=               # Hackathon start date YYYY-MM-DD (passed to --since)
-BUDGET     ?= 80000         # Max source chars per repo
+SINCE      ?=
+BUDGET     ?= 80000
 OUT        ?= hackathon.html
-REPO       ?=               # Single repo for `make score`
-REPOS_FILE ?= repos.txt     # One owner/repo per line; lines starting with # skipped
-JOBS       ?= 1             # Parallel scoring jobs (uses xargs -P)
+REPO       ?=
+REPOS_FILE ?= repos.txt
+JOBS       ?= 1
 
 _SINCE_ARG  = $(if $(SINCE),--since $(SINCE),)
 _REPOS      = grep -v '^\s*\#\|^\s*$$' $(REPOS_FILE)
