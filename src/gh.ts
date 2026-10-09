@@ -96,7 +96,12 @@ export interface RepoMetadata {
 export async function repoView(ref: RepoRef): Promise<RepoMetadata> {
     const fields = 'nameWithOwner,url,description,isFork,isPrivate,defaultBranchRef,createdAt,pushedAt,languages';
     const raw = await run('gh', ['repo', 'view', repoSpec(ref), '--json', fields], { timeoutMs: 60_000 });
-    const j = JSON.parse(raw);
+    let j;
+    try {
+        j = JSON.parse(raw);
+    } catch {
+        throw new CliError(`gh repo view returned unexpected output for ${repoSpec(ref)}`);
+    }
     const language_bytes: Record<string, number> = {};
     for (const l of j.languages ?? []) language_bytes[l.node.name] = l.size;
     return {
@@ -138,12 +143,19 @@ export interface Activity {
     total_commits: number;
 }
 
+async function hasCommits(dir: string): Promise<boolean> {
+    try {
+        await run('git', ['rev-parse', '--verify', '--quiet', 'HEAD'], { cwd: dir, timeoutMs: 30_000 });
+        return true;
+    } catch {
+        return false;
+    }
+}
+
 export async function commitStats(dir: string, since: Date | null): Promise<Activity> {
     let out = '';
-    try {
+    if (await hasCommits(dir)) {
         out = await run('git', ['log', '--format=%aI%x09%ae'], { cwd: dir, timeoutMs: 300_000 });
-    } catch (e) {
-        if (!/does not have any commits|bad default revision/i.test(String((e as Error).message))) throw e;
     }
 
     const all = out
