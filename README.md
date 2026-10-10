@@ -81,28 +81,108 @@ Notes:
 
 ---
 
+## Quick start
+
+```bash
+# 1. clone + install
+git clone https://github.com/slmingol/repo-report-card.git
+cd repo-report-card
+npm install && npm link
+
+# 2. create repos.txt (one owner/repo per line)
+echo "acme/hack-alpha\nacme/hack-beta" > repos.txt
+
+# 3. full pipeline — score every repo + render combined HTML
+make full SINCE=2026-10-08 EVENT="Acme Hackathon 2026" OUT=results.html JOBS=4
+
+# 4. open in browser
+make open OUT=results.html
+```
+
+---
+
 ## CLI 2 — `skinner-render`
 
-Stitches one or more `*-score.json` files into a single self-contained HTML file with:
-
-- Fixed sidebar: search, Detail / Overview toggle, grade legend (A–F / 70), light/dark mode
-- Per-team grade badge, score, and ↗ open-in-tab button in sidebar, grid, and list
-- Overview grid + list view: grade, score, stat chips, TLDR, contributor avatars
-- Detail view: each scorecard in its own iframe with full CSS isolation
-- Print Active Team: opens active scorecard in new tab and triggers print
-- Print All Teams: serialises all scorecards into one document for print / PDF export
+Stitches one or more `*-score.json` files into a single self-contained HTML file.
 
 ```bash
 skinner-render *-score.json > results.html
 ```
 
+### UI tour
+
+**Sidebar** — persistent left panel
+
+```
+┌──────────────────────────────┐
+│  Repo Report Card      ☀/🌙 │  ← light/dark toggle
+│  ┌────────────────────────┐  │
+│  │ 🔍  Search teams...    │  │  ← live search (filters sidebar + overview)
+│  └────────────────────────┘  │
+│  [ Detail ] [ Overview ]     │  ← view toggle
+│  ──────────────────────────  │
+│  A  58  Acme Hack Alpha  ↗  │  ← grade pill · score · name · open-in-tab
+│  B  52  Beta Builders    ↗  │
+│  C  44  Gamma Squad      ↗  │
+│  ──────────────────────────  │
+│  GRADE SCALE · /70           │
+│  [A] 62–70   [B] 52–61      │  ← grade legend
+│  [C] 42–51   [D] 32–41      │
+│  [F]  < 32                   │
+│  ──────────────────────────  │
+│  [⊞ SCORING RUBRIC       ]   │
+│  [⊞ PRINT ACTIVE TEAM    ]   │  ← opens scorecard in new tab → print dialog
+│  [⊞ PRINT ALL TEAMS      ]   │  ← serialises all teams → print / Save as PDF
+└──────────────────────────────┘
+```
+
+**Overview — grid card**
+
+```
+┌─────────────────────────────────────────┐
+│  A              Acme Hack Alpha     ↗  │  ← grade · name · open-in-tab
+│                 58 / 70                 │  ← total score
+│  ─────────────────────────────────────  │
+│  COMMITS  FILES  CONTRIB  BYTES  TESTS  │  ← stat chips
+│    143      316      4    1.2MB   60+   │
+│  ─────────────────────────────────────  │
+│  An AI agent platform that automates    │  ← TLDR (beside chips on wide screens)
+│  SWI self-service IT processes via Jira │
+└─────────────────────────────────────────┘
+```
+
+**Detail view — scorecard** (rendered inside iframe, CSS-isolated)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  ACME HACKATHON 2026 · OCT                                  │  ← event badge
+│                                                             │
+│  Acme Hack Alpha                                            │  ← project name
+│  An AI agent platform that automates SWI self-service...   │  ← description
+│  ─────────────────────────────────────────────────────────  │
+│  TEAM     [avatar] alice  [avatar] bob  [avatar] carol      │  ← GitHub avatars
+│  DATES    2026-10-08 – 2026-10-10                           │
+│  HOURS    ~18 hours                                         │
+│  SCORE    58 / 70  ·  Grade B                               │
+│  ─────────────────────────────────────────────────────────  │
+│  "Well, Superintendent, I suppose one must acknowledge..."  │  ← Skinner quip
+│  ─────────────────────────────────────────────────────────  │
+│  Architecture          7 / 10  ████████░░  ← score bar     │
+│  Code structure, layering, and separation of concerns       │
+│  src/agent/, src/api/ cleanly separated; no circular deps  │  ← evidence
+│  "Adequately compartmentalised, if not exactly visionary." │  ← per-dim quip
+│                                                             │
+│  Integrations          8 / 10  █████████░                   │
+│  Engineering Rigor     5 / 10  ██████░░░░                   │
+│  …                                                          │
+│  ─────────────────────────────────────────────────────────  │
+│  "A B, then. Not the B of promise — the B of adequacy."    │  ← closing quip
+└─────────────────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Makefile pipeline
-
-```bash
-make full SINCE=2026-10-08 REPOS_FILE=repos.txt OUT=results.html JOBS=4
-```
 
 | Target | Description |
 |---|---|
@@ -116,6 +196,40 @@ make full SINCE=2026-10-08 REPOS_FILE=repos.txt OUT=results.html JOBS=4
 | `make check` | Verify required tools are on PATH |
 
 `repos.txt` — one `owner/repo` per line, `#` lines are comments.
+
+### Common workflows
+
+```bash
+# Score a single repo interactively
+make score REPO=acme/hack-alpha SINCE=2026-10-08
+
+# Score all repos in parallel (4 workers), set event name for scorecards
+make score-all \
+  SINCE=2026-10-08 \
+  EVENT="Acme Internal Hackathon 2026" \
+  REPOS_FILE=repos.txt \
+  JOBS=4
+
+# Render the combined report from existing score files
+make render OUT=results.html
+
+# Full pipeline in one shot
+make full \
+  SINCE=2026-10-08 \
+  EVENT="Acme Internal Hackathon 2026" \
+  OUT=results.html \
+  JOBS=4
+
+# Open result in browser
+make open OUT=results.html
+
+# Re-score only — skip repos that already have a *-score.json
+# (score-all skips existing files automatically)
+make score-all SINCE=2026-10-08 JOBS=2
+
+# Wipe scores and start fresh
+make clean-all OUT=results.html && make full SINCE=2026-10-08 JOBS=4
+```
 
 ---
 
