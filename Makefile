@@ -15,10 +15,12 @@ SINCE      ?=
 BUDGET     ?= 80000
 OUT        ?= hackathon.html
 REPO       ?=
+EVENT      ?=
 REPOS_FILE ?= repos.txt
 JOBS       ?= 1
 
 _SINCE_ARG  = $(if $(SINCE),--since $(SINCE),)
+_EVENT_NOTE = $(if $(EVENT),\n\nThe event name is "$(EVENT)". Use this exact string for the `event` field in the JSON.,)
 _REPOS      = grep -v '^\s*\#\|^\s*$$' $(REPOS_FILE)
 
 .DEFAULT_GOAL := help
@@ -73,6 +75,7 @@ endif
 	outfile="$$slug-score.json"; \
 	tmpfile=$$(mktemp); \
 	sed -n '/## Technical Complexity Rubric/,$$p' README.md > "$$tmpfile"; \
+	printf '%b' '$(_EVENT_NOTE)' >> "$$tmpfile"; \
 	printf '\n\nOutput ONLY a raw JSON object matching the schema in your system prompt. No prose, no markdown, no code fences. Raw JSON only, starting with { and ending with }.' >> "$$tmpfile"; \
 	principal-skinner "$(REPO)" $(_SINCE_ARG) --budget $(BUDGET) \
 	  | claude -p "$$(cat $$tmpfile)" --allowedTools '' 2>/dev/null > "$$outfile"; \
@@ -91,6 +94,7 @@ score-all: check $(REPOS_FILE)
 	printf "$(D)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(R)\n"; \
 	tmpfile=$$(mktemp); \
 	sed -n '/## Technical Complexity Rubric/,$$p' README.md > "$$tmpfile"; \
+	printf '%b' '$(_EVENT_NOTE)' >> "$$tmpfile"; \
 	printf '\n\nOutput ONLY a raw JSON object matching the schema in your system prompt. No prose, no markdown, no code fences. Raw JSON only, starting with { and ending with }.' >> "$$tmpfile"; \
 	n=0; \
 	_score() { \
