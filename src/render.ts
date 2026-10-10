@@ -773,6 +773,19 @@ function setView(v) {
   if (v === 'overview') applySearch(document.querySelector('.search')?.value || '');
 }
 
+// Overview tile → switch to detail view and scroll to section
+document.querySelectorAll('.ov-card').forEach(function(card) {
+  card.addEventListener('click', function(e) {
+    e.preventDefault();
+    var href = card.getAttribute('href');
+    setView('detail');
+    if (href) {
+      var target = document.querySelector(href);
+      if (target) setTimeout(function() { target.scrollIntoView({ behavior: 'smooth' }); }, 0);
+    }
+  });
+});
+
 const search = document.querySelector('.search');
 const items  = document.querySelectorAll('.team-item');
 const noMatch = document.getElementById('noMatch');
