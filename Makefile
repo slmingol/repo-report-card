@@ -31,12 +31,12 @@ help:
 	@printf " $(B)Targets$(R)\n"
 	@printf "  $(CY)make score$(R)       Score one repo    $(D)REPO=owner/repo [SINCE=YYYY-MM-DD]$(R)\n"
 	@printf "  $(CY)make score-all$(R)   Score all repos   $(D)REPOS_FILE=$(REPOS_FILE) [SINCE=…] [JOBS=$(JOBS)]$(R)\n"
-	@printf "  $(CY)make render$(R)      Stitch *-scorecard.html  →  $(OUT)\n"
+	@printf "  $(CY)make render$(R)      Stitch *-score.json  →  $(OUT)\n"
 	@printf "  $(CY)make full$(R)        score-all + render (full pipeline)\n"
 	@printf "  $(CY)make open$(R)        Open $(OUT) in browser\n"
 	@printf "  $(CY)make list$(R)        List existing scorecard files\n"
-	@printf "  $(CY)make clean$(R)       Remove *-scorecard.html files\n"
-	@printf "  $(CY)make clean-all$(R)   Remove scorecards + $(OUT)\n"
+	@printf "  $(CY)make clean$(R)       Remove *-score.json files\n"
+	@printf "  $(CY)make clean-all$(R)   Remove score files + $(OUT)\n"
 	@printf "  $(CY)make check$(R)       Verify required tools are installed\n"
 	@printf "\n $(B)Variables$(R)\n"
 	@printf "  $(YL)SINCE$(R)=$(D)YYYY-MM-DD$(R)      Hackathon start date (commit window filter)\n"
@@ -69,12 +69,14 @@ ifeq ($(strip $(REPO)),)
 	@printf "  usage: $(D)make score REPO=owner/repo [SINCE=YYYY-MM-DD]$(R)\n" && exit 1
 endif
 	@printf "\n$(CY)▶$(R) $(B)$(REPO)$(R)$(if $(SINCE),  $(D)since $(SINCE)$(R),)\n"
-	@tmpfile=$$(mktemp); \
+	@slug=$$(echo "$(REPO)" | sed 's|.*/||'); \
+	outfile="$$slug-score.json"; \
+	tmpfile=$$(mktemp); \
 	sed -n '/## Technical Complexity Rubric/,$$p' README.md > "$$tmpfile"; \
 	principal-skinner "$(REPO)" $(_SINCE_ARG) --budget $(BUDGET) \
-	  | claude -p "$$(cat $$tmpfile)" 2>/dev/null; \
+	  | claude -p "$$(cat $$tmpfile)" --allowedTools '' 2>/dev/null > "$$outfile"; \
 	rm -f "$$tmpfile"
-	@printf "$(GR)✓$(R) $(REPO) scored\n\n"
+	@printf "$(GR)✓$(R) $(REPO) → $$(echo "$(REPO)" | sed 's|.*/||')-score.json\n\n"
 
 # ── Score all repos from file ─────────────────────────────────────────────────
 $(REPOS_FILE):
@@ -92,13 +94,13 @@ score-all: check $(REPOS_FILE)
 	_score() { \
 	  repo="$$1"; rubric="$$2"; since_arg="$$3"; budget="$$4"; \
 	  slug=$$(echo "$$repo" | sed 's|.*/||'); \
-	  outfile="$$slug-scorecard.html"; \
+	  outfile="$$slug-score.json"; \
 	  if [ -f "$$outfile" ]; then \
 	    printf "$(D)skip$(R) $$repo  $(D)($$outfile exists)$(R)\n"; return; \
 	  fi; \
 	  printf "$(CY)▶$(R) $(B)$$repo$(R)\n"; \
 	  principal-skinner "$$repo" $$since_arg --budget "$$budget" \
-	    | claude -p "$$(cat $$rubric)" 2>/dev/null \
+	    | claude -p "$$(cat $$rubric)" --allowedTools '' 2>/dev/null > "$$outfile" \
 	    && printf "$(GR)✓$(R) $$repo\n" \
 	    || printf "$(RD)✗$(R) $$repo $(RD)failed$(R)\n"; \
 	}; \
@@ -106,15 +108,15 @@ score-all: check $(REPOS_FILE)
 	$(_REPOS) | xargs -P $(JOBS) -I{} \
 	  bash -c '_score "$$@"' _ "{}" "$$tmpfile" "$(_SINCE_ARG)" "$(BUDGET)"; \
 	rm -f "$$tmpfile"; \
-	done_count=$$(ls *-scorecard.html 2>/dev/null | wc -l | tr -d ' '); \
+	done_count=$$(ls *-score.json 2>/dev/null | wc -l | tr -d ' '); \
 	printf "\n$(GR)$(B)$$done_count/$$total$(R)$(GR) scorecards written$(R)\n\n"
 
 # ── Render combined HTML ───────────────────────────────────────────────────────
 render:
-	@count=$$(ls *-scorecard.html 2>/dev/null | wc -l | tr -d ' '); \
-	[ "$$count" -gt 0 ] || (printf "$(RD)error:$(R) no *-scorecard.html files — run make score-all first\n" && exit 1); \
-	printf "\n$(CY)▶$(R) Stitching $(B)$$count$(R) scorecards  →  $(B)$(OUT)$(R)\n"; \
-	skinner-render *-scorecard.html > "$(OUT)"; \
+	@count=$$(ls *-score.json 2>/dev/null | wc -l | tr -d ' '); \
+	[ "$$count" -gt 0 ] || (printf "$(RD)error:$(R) no *-score.json files — run make score-all first\n" && exit 1); \
+	printf "\n$(CY)▶$(R) Stitching $(B)$$count$(R) score files  →  $(B)$(OUT)$(R)\n"; \
+	skinner-render *-score.json > "$(OUT)"; \
 	size=$$(du -sh "$(OUT)" | cut -f1); \
 	printf "$(GR)✓$(R) $(B)$(OUT)$(R)  $(D)$$size$(R)\n\n"
 
@@ -131,19 +133,19 @@ open:
 
 # ── List scorecards ────────────────────────────────────────────────────────────
 list:
-	@count=$$(ls *-scorecard.html 2>/dev/null | wc -l | tr -d ' '); \
-	printf "\n$(B)Scorecards$(R)  ($(CY)$$count$(R) files)\n"; \
+	@count=$$(ls *-score.json 2>/dev/null | wc -l | tr -d ' '); \
+	printf "\n$(B)Score files$(R)  ($(CY)$$count$(R) files)\n"; \
 	printf "$(D)──────────────────────────────────────────────$(R)\n"; \
-	ls -lhS *-scorecard.html 2>/dev/null \
+	ls -lhS *-score.json 2>/dev/null \
 	  | awk '{printf "  \033[32m✓\033[0m  %-50s %s\n", $$9, $$5}' \
 	  || printf "  $(D)none$(R)\n"; \
 	printf "\n"
 
 # ── Clean ──────────────────────────────────────────────────────────────────────
 clean:
-	@count=$$(ls *-scorecard.html 2>/dev/null | wc -l | tr -d ' '); \
+	@count=$$(ls *-score.json 2>/dev/null | wc -l | tr -d ' '); \
 	[ "$$count" -gt 0 ] \
-	  && (printf "$(YL)→$(R) Removing $(B)$$count$(R) scorecard(s)\n"; rm -f *-scorecard.html) \
+	  && (printf "$(YL)→$(R) Removing $(B)$$count$(R) score file(s)\n"; rm -f *-score.json) \
 	  || printf "$(D)nothing to clean$(R)\n"
 
 clean-all: clean
