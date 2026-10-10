@@ -842,12 +842,12 @@ body {
 .ov-row-score-denom { font-size: 11px; color: var(--fg-dim); font-weight: 400; font-family: var(--font-mono); }
 .ov-row-bar { width: 100%; height: 4px; background: var(--bar-track); border-radius: 2px; overflow: hidden; }
 .ov-row-bar-fill { height: 100%; border-radius: 2px; background: var(--score); }
-.grade-legend { margin: 0 14px 10px; padding: 8px 10px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r); }
-.grade-legend-title { font-family: var(--font-mono); font-size: 8.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--fg-dim); margin-block-end: 6px; }
-.grade-legend-rows { display: flex; flex-direction: column; gap: 3px; }
-.grade-legend-row { display: flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10px; }
-.grade-legend-pill { font-weight: 700; font-size: 10px; padding: 1px 6px; border-radius: 4px; line-height: 1.5; flex-shrink: 0; width: 18px; text-align: center; }
-.grade-legend-range { color: var(--fg-dim); }
+.grade-legend { margin: 0 14px 10px; padding: 10px 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r); }
+.grade-legend-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--fg-dim); margin-block-end: 8px; }
+.grade-legend-rows { display: flex; flex-direction: column; gap: 5px; }
+.grade-legend-row { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 12px; }
+.grade-legend-pill { font-family: var(--font-head); font-weight: 800; font-size: 13px; padding: 2px 0; border-radius: 5px; flex-shrink: 0; width: 26px; text-align: center; line-height: 1.4; }
+.grade-legend-range { color: var(--fg-muted); font-weight: 600; font-size: 11px; }
 .rubric-btn { margin: 0 14px 6px; padding: 6px 10px; font-size: 10px; font-family: var(--font-mono); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-muted); background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r); cursor: pointer; width: calc(100% - 28px); text-align: left; display: flex; align-items: center; gap: 6px; }
 .rubric-btn:hover { border-color: var(--accent); color: var(--accent); }
 .rubric-btn::before { content: '⊞'; font-size: 12px; }
@@ -916,7 +916,7 @@ ${sidebarItems}
   </div>
   <button class="rubric-btn" onclick="document.getElementById('rubricOverlay').classList.add('open')">Scoring Rubric</button>
   <button class="rubric-btn" onclick="printActive()">Print Active Team</button>
-  <button class="rubric-btn" onclick="window.print()" style="margin-block-end:14px">Print All Teams</button>
+  <button class="rubric-btn" onclick="printAll()" style="margin-block-end:14px">Print All Teams</button>
 </aside>
 
 <div class="rubric-overlay" id="rubricOverlay" onclick="if(event.target===this)this.classList.remove('open')">
@@ -1064,6 +1064,26 @@ function printActive() {
   w.document.close();
   w.focus();
   setTimeout(function() { w.print(); }, 400);
+}
+
+function printAll() {
+  var frames = document.querySelectorAll('iframe.scorecard-frame');
+  if (!frames.length) return;
+  var w = window.open('', '_blank');
+  if (!w) return;
+  var styles = '';
+  try { styles = frames[0].contentDocument.head.innerHTML; } catch(e) {}
+  var bodies = [];
+  frames.forEach(function(f, i) {
+    try {
+      if (i > 0) bodies.push('<div style="page-break-before:always;height:0;margin:0"></div>');
+      bodies.push(f.contentDocument.body.innerHTML);
+    } catch(e) {}
+  });
+  w.document.write('<!doctype html><html><head>' + styles + '</head><body style="padding:0;margin:0">' + bodies.join('') + '</body></html>');
+  w.document.close();
+  w.focus();
+  setTimeout(function() { w.print(); }, 500);
 }
 
 document.querySelectorAll('iframe.scorecard-frame').forEach(function(f) {
