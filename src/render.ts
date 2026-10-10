@@ -669,7 +669,7 @@ function buildCombinedHtml(sections: Section[], skinnerImgs: string[], rubric: s
         const chipKeys = ['commits', 'files', 'contributors', 'bytes'];
         const chips = chipKeys.map(k => {
             const v = s.stats[k] || '—';
-            return `<span class="ov-row-chip">${escHtml(k)} ${escHtml(v)}</span>`;
+            return `<div class="ov-row-chip"><div class="ov-chip-val">${escHtml(v)}</div><div class="ov-chip-lbl">${escHtml(k)}</div></div>`;
         }).join('');
         const pct = Math.round((s.score / 70) * 100);
         const tldrShort = s.tldr ? escHtml(s.tldr.slice(0, 120)) + (s.tldr.length > 120 ? '…' : '') : '';
@@ -721,28 +721,26 @@ function buildCombinedHtml(sections: Section[], skinnerImgs: string[], rubric: s
   --font-body: 'DM Sans', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Courier New', monospace;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg:        #080E18;
-    --surface:   #0F1826;
-    --surface-2: #162035;
-    --border:    #1F2E45;
-    --fg:        #E4EAF5;
-    --fg-muted:  #8897B4;
-    --fg-dim:    #4A5A75;
-    --accent:    #22D3EE;
-    --score:     #FBBF24;
-    --score-bg:  #1C1408;
-    --bar-track: #1F2E45;
-    --max:       #34D399;
-    --max-bg:    #062316;
-    --warn:      #F59E0B;
-    --warn-bg:   #1A1200;
-    --quip:      #A78BFA;
-    --quip-bg:   #13102A;
-    --quip-bdr:  #4C3D8A;
-    color-scheme: dark;
-  }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg:#080E18;--surface:#0F1826;--surface-2:#162035;--border:#1F2E45;
+    --fg:#E4EAF5;--fg-muted:#8897B4;--fg-dim:#4A5A75;--accent:#22D3EE;
+    --score:#FBBF24;--score-bg:#1C1408;--bar-track:#1F2E45;--max:#34D399;
+    --max-bg:#062316;--warn:#F59E0B;--warn-bg:#1A1200;--quip:#A78BFA;
+    --quip-bg:#13102A;--quip-bdr:#4C3D8A;color-scheme:dark;
+} }
+:root[data-theme="dark"] {
+    --bg:#080E18;--surface:#0F1826;--surface-2:#162035;--border:#1F2E45;
+    --fg:#E4EAF5;--fg-muted:#8897B4;--fg-dim:#4A5A75;--accent:#22D3EE;
+    --score:#FBBF24;--score-bg:#1C1408;--bar-track:#1F2E45;--max:#34D399;
+    --max-bg:#062316;--warn:#F59E0B;--warn-bg:#1A1200;--quip:#A78BFA;
+    --quip-bg:#13102A;--quip-bdr:#4C3D8A;color-scheme:dark;
+}
+:root[data-theme="light"] {
+    --bg:#F4F6FA;--surface:#FFFFFF;--surface-2:#EDF0F7;--border:#D8DDE8;
+    --fg:#0C1525;--fg-muted:#566079;--fg-dim:#8E97AA;--accent:#0891B2;
+    --score:#D97706;--score-bg:#FEF3C7;--bar-track:#D8DDE8;--max:#059669;
+    --max-bg:#D1FAE5;--warn:#B45309;--warn-bg:#FFFBEB;--quip:#7C3AED;
+    --quip-bg:#F5F3FF;--quip-bdr:#C4B5FD;color-scheme:light;
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
@@ -811,8 +809,10 @@ body {
 .ov-row-grade { font-family: var(--font-mono); font-size: 11px; font-weight: 700; padding: 3px 7px; border-radius: 6px; white-space: nowrap; text-align: center; }
 .ov-row-info { min-width: 0; }
 .ov-row-name { font-family: var(--font-head); font-size: 14px; font-weight: 700; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ov-row-chips { display: flex; gap: 5px; margin-block-start: 4px; flex-wrap: wrap; }
-.ov-row-chip { font-family: var(--font-mono); font-size: 9.5px; color: var(--fg-dim); background: var(--surface-2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; white-space: nowrap; }
+.ov-row-chips { display: flex; gap: 6px; margin-block-start: 6px; flex-wrap: wrap; }
+.ov-row-chip { background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; text-align: center; min-width: 56px; }
+.ov-chip-val { font-family: var(--font-head); font-size: 14px; font-weight: 700; color: var(--fg); font-variant-numeric: tabular-nums; line-height: 1.2; }
+.ov-chip-lbl { font-family: var(--font-mono); font-size: 8px; text-transform: uppercase; letter-spacing: .07em; color: var(--fg-dim); margin-block-start: 2px; }
 .ov-row-tldr { font-size: 12px; color: var(--fg-muted); font-style: italic; line-height: 1.4; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .ov-row-score { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
 .ov-row-score-val { font-family: var(--font-head); font-size: 20px; font-weight: 800; color: var(--score); font-variant-numeric: tabular-nums; line-height: 1; }
@@ -850,7 +850,10 @@ body {
 
 <aside class="sidebar">
   <div class="sidebar-head">
-    <div class="sidebar-title">Repo Report Card</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-block-end:4px">
+      <div class="sidebar-title">Repo Report Card</div>
+      <button id="themeToggle" onclick="toggleTheme()" style="background:none;border:none;cursor:pointer;font-size:16px;padding:2px 4px;color:var(--fg-muted);line-height:1" title="Toggle light/dark">☀</button>
+    </div>
     ${(() => { const ev = sections.find(s => s.event)?.event; return ev ? `<div class="sidebar-event">${escHtml(ev)}</div>` : ''; })()}
     <div class="sidebar-count">${sections.length} team${sections.length !== 1 ? 's' : ''}</div>
     <div class="view-toggle">
@@ -958,6 +961,26 @@ function applySearch(raw) {
   if (noMatch) noMatch.style.display = shown === 0 ? 'block' : 'none';
 }
 search?.addEventListener('input', () => applySearch(search.value));
+
+function toggleTheme() {
+  var root = document.documentElement;
+  var cur = root.getAttribute('data-theme');
+  var isDark = cur === 'dark' || (!cur && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var next = isDark ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  document.getElementById('themeToggle').textContent = next === 'dark' ? '☀' : '🌙';
+  try { localStorage.setItem('rrc-theme', next); } catch(e) {}
+}
+(function() {
+  try {
+    var saved = localStorage.getItem('rrc-theme');
+    if (saved) {
+      document.documentElement.setAttribute('data-theme', saved);
+      var btn = document.getElementById('themeToggle');
+      if (btn) btn.textContent = saved === 'dark' ? '☀' : '🌙';
+    }
+  } catch(e) {}
+})();
 
 const sections = document.querySelectorAll('.team-section');
 const observer = new IntersectionObserver(entries => {
