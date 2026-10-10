@@ -4,7 +4,7 @@ import { summarize, walk } from './inventory';
 import { selectSamples } from './select';
 import { extractSignals } from './signals';
 
-const DEFAULT_BUDGET = 80_000;
+const DEFAULT_BUDGET = 300_000;
 
 const USAGE = `Usage: principal-skinner <owner/repo | github url> [--since YYYY-MM-DD] [--budget ${DEFAULT_BUDGET}]
 
