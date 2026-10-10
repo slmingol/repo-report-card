@@ -73,6 +73,7 @@ endif
 	outfile="$$slug-score.json"; \
 	tmpfile=$$(mktemp); \
 	sed -n '/## Technical Complexity Rubric/,$$p' README.md > "$$tmpfile"; \
+	printf '\n\nOutput ONLY a raw JSON object matching the schema in your system prompt. No prose, no markdown, no code fences. Raw JSON only, starting with { and ending with }.' >> "$$tmpfile"; \
 	principal-skinner "$(REPO)" $(_SINCE_ARG) --budget $(BUDGET) \
 	  | claude -p "$$(cat $$tmpfile)" --allowedTools '' 2>/dev/null > "$$outfile"; \
 	rm -f "$$tmpfile"
@@ -90,6 +91,7 @@ score-all: check $(REPOS_FILE)
 	printf "$(D)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(R)\n"; \
 	tmpfile=$$(mktemp); \
 	sed -n '/## Technical Complexity Rubric/,$$p' README.md > "$$tmpfile"; \
+	printf '\n\nOutput ONLY a raw JSON object matching the schema in your system prompt. No prose, no markdown, no code fences. Raw JSON only, starting with { and ending with }.' >> "$$tmpfile"; \
 	n=0; \
 	_score() { \
 	  repo="$$1"; rubric="$$2"; since_arg="$$3"; budget="$$4"; \
