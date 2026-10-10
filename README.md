@@ -6,8 +6,11 @@
   Collect evidence &nbsp;→&nbsp; score as Principal Skinner &nbsp;→&nbsp; render a polished HTML report.</p>
   <p>
     <img src="https://img.shields.io/badge/node-%3E%3D20-339933?logo=nodedotjs&logoColor=white" alt="Node" />
-    <img src="https://img.shields.io/badge/powered%20by-Claude-7C3AED?logo=anthropic&logoColor=white" alt="Claude" />
+    <img src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
+    <img src="https://img.shields.io/badge/requires-gh%20CLI-0969da?logo=github&logoColor=white" alt="gh CLI" />
+    <img src="https://img.shields.io/badge/runs%20on-Claude%20Code-7C3AED?logo=anthropic&logoColor=white" alt="Claude Code" />
     <img src="https://img.shields.io/badge/scored%20by-Principal%20Skinner-1d70b8" alt="Scored by Principal Skinner" />
+    <img src="https://img.shields.io/badge/PRs-welcome-brightgreen" alt="PRs welcome" />
     <img src="https://img.shields.io/badge/license-MIT-blue" alt="License" />
   </p>
 </div>
