@@ -635,7 +635,7 @@ function buildCombinedHtml(sections: Section[], skinnerImgs: string[], rubric: s
       <span class="score-num">${s.score}<span class="denom">/70</span></span>
     </span>
   </a>
-  <a class="open-tab-btn" data-open-slug="${s.slug}" href="#" target="_blank" title="Open in new tab">↗</a>
+  <a class="open-tab-btn" data-open-slug="${s.slug}" href="#" target="_blank" title="Open in new tab (⌘-click for background)">↗</a>
 </div>`;
     }).join('\n');
 
@@ -666,7 +666,7 @@ function buildCombinedHtml(sections: Section[], skinnerImgs: string[], rubric: s
     <span class="ov-name">${escHtml(s.name)}</span>
     <div style="display:flex;align-items:flex-start;gap:6px">
       <div class="ov-grade" style="background:${bg};color:${color}"><span class="ov-grade-letter">${s.grade}</span><span class="ov-grade-score">${s.score}/70</span></div>
-      <a class="open-tab-btn" data-open-slug="${s.slug}" href="#" target="_blank" title="Open in new tab" onclick="event.stopPropagation()">↗</a>
+      <a class="open-tab-btn" data-open-slug="${s.slug}" href="#" target="_blank" title="Open in new tab (⌘-click for background)" onclick="event.stopPropagation()">↗</a>
     </div>
   </div>
   <div class="ov-stats">${statsHtml}</div>
@@ -698,7 +698,7 @@ function buildCombinedHtml(sections: Section[], skinnerImgs: string[], rubric: s
     <div><span class="ov-row-score-val">${s.score}</span><span class="ov-row-score-denom"> /70</span></div>
     <div class="ov-row-bar"><div class="ov-row-bar-fill" style="width:${pct}%"></div></div>
   </div>
-  <a class="open-tab-btn" data-open-slug="${s.slug}" href="#" target="_blank" title="Open in new tab" onclick="event.stopPropagation()" style="align-self:center">↗</a>
+  <a class="open-tab-btn" data-open-slug="${s.slug}" href="#" target="_blank" title="Open in new tab (⌘-click for background)" onclick="event.stopPropagation()" style="align-self:center">↗</a>
 </div>`;
     }).join('\n');
 
