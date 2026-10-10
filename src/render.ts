@@ -320,6 +320,13 @@ body {
 .meta-lbl { font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-dim); white-space: nowrap; padding: 8px 14px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); background: var(--surface); }
 .meta-val { color: var(--fg-muted); line-height: 1.5; padding: 8px 14px; border-bottom: 1px solid var(--border); font-size: 15px; }
 .meta-table > span:nth-last-child(-n+2) { border-bottom: none; }
+.contrib-avatar { width: 24px; height: 24px; border-radius: 50%; vertical-align: middle; margin-inline-end: 5px; border: 1px solid var(--border); object-fit: cover; }
+.contrib-name { font-size: 15px; color: var(--fg-muted); }
+@media print {
+  body { font-size: 14px; }
+  .score-hero, .dim-card { break-inside: avoid; }
+  .quip { break-inside: avoid; }
+}
 .meta-val a { color: var(--accent); text-decoration: none; font-weight: 500; }
 .meta-val a:hover { text-decoration: underline; }
 .meta-tag { display: inline-block; font-family: var(--font-mono); font-size: 10px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 7px; color: var(--fg-dim); margin-inline-start: 8px; vertical-align: middle; letter-spacing: .04em; }
@@ -450,7 +457,7 @@ function renderScorecardHtml(data: ScoreData, imgs: string[]): string {
   <h1 class="project-name">${escHtml(data.project_name)}</h1>
   <p class="project-sub">${escHtml(data.description)}</p>
   <div class="meta-table">
-    ${(data.contributors ?? []).length ? `<span class="meta-lbl">Team</span><span class="meta-val">${escHtml((data.contributors ?? []).join(' · '))}</span>` : ''}
+    ${(data.contributors ?? []).length ? `<span class="meta-lbl">Team</span><span class="meta-val">${(data.contributors ?? []).map(u => `<img class="contrib-avatar" src="https://github.com/${escHtml(u)}.png?size=32" alt="${escHtml(u)}" title="${escHtml(u)}" loading="lazy"><span class="contrib-name">${escHtml(u)}</span>`).join(' &nbsp;·&nbsp; ')}</span>` : ''}
     <span class="meta-lbl">Window</span><span class="meta-val">${escHtml(data.dates)} &nbsp;·&nbsp; ${escHtml(data.hours)}</span>
     <span class="meta-lbl">Repo</span><span class="meta-val"><a href="${escHtml(repoUrl)}" target="_blank" rel="noopener">${escHtml(data.repo)}</a><span class="meta-tag">${data.signals?.is_fork ? 'fork' : 'private'}</span></span>
   </div>
@@ -654,7 +661,7 @@ function buildCombinedHtml(sections: Section[], skinnerImgs: string[], rubric: s
         return `<a class="ov-card" href="#${s.slug}" data-name="${s.name.toLowerCase()}">
   <div class="ov-card-head">
     <span class="ov-name">${escHtml(s.name)}</span>
-    <span class="ov-grade" style="background:${bg};color:${color}">${s.grade} · ${s.score}/70</span>
+    <div class="ov-grade" style="background:${bg};color:${color}"><span class="ov-grade-letter">${s.grade}</span><span class="ov-grade-score">${s.score}/70</span></div>
   </div>
   <div class="ov-stats">${statsHtml}</div>
   ${tldr}
@@ -796,7 +803,7 @@ body {
 .ov-card:hover { border-color: var(--accent); box-shadow: 0 2px 12px rgba(8,145,178,.15); }
 .ov-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-block-end: 10px; }
 .ov-name { font-family: var(--font-head); font-size: 14px; font-weight: 700; color: var(--fg); line-height: 1.3; flex: 1; min-width: 0; word-break: break-word; }
-.ov-grade { font-family: var(--font-mono); font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+.ov-grade { font-family: var(--font-mono); font-weight: 700; border-radius: 8px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 12px; flex-shrink: 0; }
 .ov-stats { display: flex; flex-wrap: wrap; gap: 6px; margin-block-end: 10px; }
 .ov-stat { background: var(--surface-2); border-radius: 6px; padding: 6px 10px; text-align: center; min-width: 52px; }
 .ov-stat-num { font-family: var(--font-head); font-size: 15px; font-weight: 800; color: var(--fg); font-variant-numeric: tabular-nums; line-height: 1.2; }
@@ -847,6 +854,15 @@ body {
   .sidebar { display: none; }
   .content { margin-left: 0; }
 }
+@media print {
+  .sidebar, .ov-toolbar, .rubric-overlay { display: none !important; }
+  .content { margin-left: 0 !important; }
+  .overview-panel { display: none !important; }
+  .team-section { display: block !important; page-break-before: always; }
+  .team-section:first-of-type { page-break-before: avoid; }
+  .scorecard-frame { width: 100% !important; height: auto !important; min-height: 100vh; border: none !important; }
+  body { background: white; }
+}
 </style>
 </head>
 <body>
@@ -870,6 +886,7 @@ ${sidebarItems}
   </nav>
   <div class="no-match" id="noMatch">No teams match.</div>
   <button class="rubric-btn" onclick="document.getElementById('rubricOverlay').classList.add('open')">Scoring Rubric</button>
+  <button class="rubric-btn" onclick="printActive()" style="margin-block-start:6px">Print / Export</button>
 </aside>
 
 <div class="rubric-overlay" id="rubricOverlay" onclick="if(event.target===this)this.classList.remove('open')">
@@ -987,6 +1004,25 @@ function toggleTheme() {
     if (saved) { applyTheme(saved); }
   } catch(e) {}
 })();
+
+function printActive() {
+  var f = document.querySelector('.team-section:not([style*="display: none"]) iframe.scorecard-frame') ||
+          document.querySelector('iframe.scorecard-frame');
+  if (!f) { window.print(); return; }
+  var w = window.open('', '_blank');
+  if (!w) { window.print(); return; }
+  w.document.write(f.contentDocument.documentElement.outerHTML);
+  w.document.close();
+  w.focus();
+  setTimeout(function() { w.print(); }, 400);
+}
+
+document.querySelectorAll('iframe.scorecard-frame').forEach(function(f) {
+  f.addEventListener('load', function() {
+    var cur = document.documentElement.getAttribute('data-theme');
+    if (cur) { try { f.contentDocument.documentElement.setAttribute('data-theme', cur); } catch(e) {} }
+  });
+});
 
 const sections = document.querySelectorAll('.team-section');
 const observer = new IntersectionObserver(entries => {
