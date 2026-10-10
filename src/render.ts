@@ -70,6 +70,7 @@ interface Section {
     tldr: string;
     stats: Record<string, string>;
     event: string;
+    dimensions?: Dimension[];
 }
 
 interface Args {
@@ -374,6 +375,11 @@ body {
 .badge.green { color: var(--max); background: var(--max-bg); border-color: transparent; }
 .badge.grey  { color: var(--fg-dim); }
 footer { border-top: 1px solid var(--border); padding-block-start: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 16px; color: var(--fg-dim); font-family: var(--font-mono); }
+.radar-wrap { position: relative; display: inline-block; }
+.radar-tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; font-family: var(--font-mono); font-size: 13px; color: var(--fg); white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,.18); opacity: 0; transition: opacity .1s; z-index: 10; transform: translate(-50%, -110%); }
+.radar-tip.show { opacity: 1; }
+@keyframes radarIn { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: scale(1); } }
+.radar-wrap svg polygon:last-of-type { transform-origin: center; animation: radarIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
 `;
 
 // ── Scorecard HTML renderer (from JSON) ───────────────────────────────────────
@@ -417,7 +423,7 @@ function radarSvg(dims: Dimension[]): string {
     }).join('');
 
     const dots = dims.map((d, i) =>
-        `<circle cx="${ptx(i, d.score)}" cy="${pty(i, d.score)}" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5"><title>${escHtml(d.name)}: ${d.score}/10</title></circle>`
+        `<circle cx="${ptx(i, d.score)}" cy="${pty(i, d.score)}" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5" data-dim="${escHtml(d.name)}" data-score="${d.score}" style="cursor:pointer"/>`
     ).join('');
 
     const scoreNums = dims.map((d, i) => {
@@ -430,7 +436,7 @@ function radarSvg(dims: Dimension[]): string {
         return `<text x="${nx}" y="${ny}" text-anchor="${anchor}" dominant-baseline="${base}" font-family="var(--font-head)" font-size="9.5" font-weight="700" fill="var(--accent)" opacity="0.9">${d.score}</text>`;
     }).join('');
 
-    return `<svg viewBox="0 0 220 220" width="200" height="200" role="img" aria-label="Dimension scores radar chart">
+    return `<div class="radar-wrap"><svg viewBox="0 0 220 220" width="200" height="200" role="img" aria-label="Dimension scores radar chart">
   <title>Dimension scores</title>
   ${rings}
   ${axes}
@@ -438,6 +444,40 @@ function radarSvg(dims: Dimension[]): string {
   ${dots}
   ${labels}
   ${scoreNums}
+</svg><div class="radar-tip" id="radarTip"></div></div>`;
+}
+
+function miniRadarSvg(dims: Dimension[]): string {
+    const n = dims.length;
+    if (!n) return '';
+    const cx = 45, cy = 45, r = 36;
+    const ang = (i: number) => -Math.PI / 2 + (2 * Math.PI * i / n);
+    const ptx = (i: number, v: number) => (cx + (v / 10) * r * Math.cos(ang(i))).toFixed(1);
+    const pty = (i: number, v: number) => (cy + (v / 10) * r * Math.sin(ang(i))).toFixed(1);
+
+    const rings = [5, 10].map(v => {
+        const rr = (v / 10) * r;
+        const pts = Array.from({length: n}, (_, i) =>
+            `${(cx + rr * Math.cos(ang(i))).toFixed(1)},${(cy + rr * Math.sin(ang(i))).toFixed(1)}`
+        ).join(' ');
+        return `<polygon points="${pts}" fill="none" stroke="var(--bar-track)" stroke-width="0.6" opacity="0.5"/>`;
+    }).join('');
+
+    const axes = Array.from({length: n}, (_, i) =>
+        `<line x1="${cx}" y1="${cy}" x2="${(cx + r * Math.cos(ang(i))).toFixed(1)}" y2="${(cy + r * Math.sin(ang(i))).toFixed(1)}" stroke="var(--bar-track)" stroke-width="0.5" opacity="0.3"/>`
+    ).join('');
+
+    const poly = dims.map((d, i) => `${ptx(i, d.score)},${pty(i, d.score)}`).join(' ');
+
+    const dots = dims.map((d, i) =>
+        `<circle cx="${ptx(i, d.score)}" cy="${pty(i, d.score)}" r="2.5" fill="var(--accent)" stroke="var(--surface)" stroke-width="1"><title>${escHtml(d.name)}: ${d.score}/10</title></circle>`
+    ).join('');
+
+    return `<svg viewBox="0 0 90 90" width="76" height="76" role="img" aria-label="Mini dimension radar">
+  ${rings}
+  ${axes}
+  <polygon points="${poly}" fill="var(--accent)" fill-opacity="0.15" stroke="var(--accent)" stroke-width="1.5" stroke-linejoin="round"/>
+  ${dots}
 </svg>`;
 }
 
@@ -551,6 +591,24 @@ ${quipBlock(data.closing_quip, pickImg(imgs))}
   <span>Scored ${escHtml(data.scored_at)} · ${data.files_sampled} files sampled of ${data.eligible_files} eligible</span>
 </footer>
 
+<script>
+(function() {
+  var tip = document.getElementById('radarTip');
+  if (!tip) return;
+  document.querySelectorAll('[data-dim]').forEach(function(dot) {
+    dot.addEventListener('mouseenter', function() {
+      tip.textContent = dot.dataset.dim + ': ' + dot.dataset.score + '/10';
+      var rect = dot.getBoundingClientRect();
+      var wrap = tip.parentElement;
+      var wRect = wrap.getBoundingClientRect();
+      tip.style.left = (rect.left - wRect.left + rect.width / 2) + 'px';
+      tip.style.top  = (rect.top  - wRect.top) + 'px';
+      tip.classList.add('show');
+    });
+    dot.addEventListener('mouseleave', function() { tip.classList.remove('show'); });
+  });
+})();
+</script>
 </body>
 </html>`;
 }
@@ -576,6 +634,7 @@ function fromJson(data: ScoreData, idx: number, imgs: string[]): Section {
         tldr:  data.opening_quip ?? '',
         stats,
         event: data.event ?? '',
+        dimensions: data.dimensions ?? [],
     };
 }
 
@@ -708,6 +767,7 @@ function buildCombinedHtml(sections: Section[], skinnerImgs: string[], rubric: s
             return `<div class="ov-stat"><div class="ov-stat-num">${escHtml(v)}</div><div class="ov-stat-lbl">${escHtml(k)}</div></div>`;
         }).join('');
         const tldr = s.tldr ? `<p class="ov-tldr">${escHtml(s.tldr.slice(0, 220))}${s.tldr.length > 220 ? '…' : ''}</p>` : '';
+        const miniRadar = s.dimensions?.length ? `<div class="ov-radar">${miniRadarSvg(s.dimensions)}</div>` : '';
         return `<div class="ov-card" data-href="#${s.slug}" data-name="${s.name.toLowerCase()}" data-score="${s.score}">
   <div class="ov-card-head">
     <span class="ov-name">${escHtml(s.name)}</span>
@@ -718,6 +778,7 @@ function buildCombinedHtml(sections: Section[], skinnerImgs: string[], rubric: s
   </div>
   <div class="ov-stats">${statsHtml}</div>
   ${tldr}
+  ${miniRadar}
 </div>`;
     }).join('\n');
 
@@ -757,6 +818,10 @@ function buildCombinedHtml(sections: Section[], skinnerImgs: string[], rubric: s
 <title>Repo Report Card — Hackathon Scorecards (${sections.length} teams)</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;600&display=swap">
 ${FAVICON ? `<link rel="icon" href="${FAVICON}">` : ''}
+<script type="application/json" id="rrc-scores">${JSON.stringify(sections.map(s => ({
+    slug: s.slug, name: s.name, score: s.score, grade: s.grade,
+    event: s.event, stats: s.stats, dimensions: s.dimensions ?? [],
+})))}</script>
 <style>
 :root {
   --bg:        #F4F6FA;
@@ -872,6 +937,12 @@ body {
 .ov-stat-num { font-family: var(--font-head); font-size: 15px; font-weight: 800; color: var(--fg); font-variant-numeric: tabular-nums; line-height: 1.2; }
 .ov-stat-lbl { font-size: 9px; color: var(--fg-dim); text-transform: uppercase; letter-spacing: .06em; font-weight: 500; margin-block-start: 1px; }
 .ov-tldr { font-size: 12px; color: var(--fg-muted); font-style: italic; line-height: 1.5; margin: 0; }
+.ov-radar { margin-block-start: 10px; display: flex; justify-content: center; opacity: 0.85; }
+.search-wrap { position: relative; display: flex; align-items: center; margin-block-start: 6px; }
+.search-wrap .search { padding-inline-end: 28px; }
+.search-clear { position: absolute; right: 6px; background: none; border: none; font-size: 11px; color: var(--fg-dim); cursor: pointer; padding: 0 2px; line-height: 1; }
+.search-clear:hover { color: var(--fg); }
+.search-count { font-family: var(--font-mono); font-size: 10px; color: var(--fg-dim); text-align: right; margin-block-start: 3px; min-height: 14px; }
 .ov-list { display: flex; flex-direction: column; gap: 6px; }
 .ov-row { display: grid; grid-template-columns: 28px 70px 1fr 120px 28px; align-items: stretch; gap: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; color: inherit; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
 .ov-row:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(8,145,178,.12); }
@@ -948,7 +1019,11 @@ body {
       <button class="view-btn active" id="btnDetail" onclick="setView('detail')">Detail</button>
       <button class="view-btn" id="btnOverview" onclick="setView('overview')">Overview</button>
     </div>
-    <input class="search" type="search" placeholder="Search teams…" aria-label="Search teams">
+    <div class="search-wrap">
+      <input class="search" type="search" placeholder="Search teams…" aria-label="Search teams">
+      <button class="search-clear" id="searchClear" onclick="clearSearch()" title="Clear search" style="display:none">✕</button>
+    </div>
+    <div class="search-count" id="searchCount"></div>
   </div>
   <nav class="team-list" id="teamList">
 ${sidebarItems}
@@ -966,7 +1041,8 @@ ${sidebarItems}
   </div>
   <button class="rubric-btn" onclick="document.getElementById('rubricOverlay').classList.add('open')">Scoring Rubric</button>
   <button class="rubric-btn" onclick="printActive()">Print Active Team</button>
-  <button class="rubric-btn" onclick="printAll()" style="margin-block-end:14px">Print All Teams</button>
+  <button class="rubric-btn" onclick="printAll()">Print All Teams</button>
+  <button class="rubric-btn" onclick="exportCsv()" style="margin-block-end:14px">Export CSV</button>
 </aside>
 
 <div class="rubric-overlay" id="rubricOverlay" onclick="if(event.target===this)this.classList.remove('open')">
@@ -1063,6 +1139,14 @@ function applySearch(raw) {
     card.style.display = match ? '' : 'none';
   });
   if (noMatch) noMatch.style.display = shown === 0 ? 'block' : 'none';
+  var clearBtn = document.getElementById('searchClear');
+  if (clearBtn) clearBtn.style.display = q ? '' : 'none';
+  var countEl = document.getElementById('searchCount');
+  if (countEl) countEl.textContent = q ? shown + ' of ' + items.length + ' teams' : '';
+}
+function clearSearch() {
+  if (search) { search.value = ''; search.focus(); }
+  applySearch('');
 }
 search?.addEventListener('input', () => applySearch(search.value));
 
@@ -1176,6 +1260,44 @@ function sortOverview(mode) {
   reorder(list, '.ov-row');
   list.querySelectorAll('.ov-rank').forEach(function(el, i) { el.textContent = String(i + 1); });
 }
+
+function exportCsv() {
+  var el = document.getElementById('rrc-scores');
+  if (!el) return;
+  var data;
+  try { data = JSON.parse(el.textContent); } catch(e) { return; }
+  var dimNames = (data[0]?.dimensions || []).map(function(d) { return d.name; });
+  var header = ['Rank','Team','Score','Grade','Commits','Files','Contributors','Bytes'].concat(dimNames);
+  var rows = data.slice().sort(function(a, b) { return b.score - a.score; }).map(function(t, i) {
+    var dimScores = dimNames.map(function(n) { var d = (t.dimensions || []).find(function(x) { return x.name === n; }); return d ? d.score : ''; });
+    return [i+1, t.name, t.score, t.grade, t.stats?.commits||'', t.stats?.files||'', t.stats?.contributors||'', t.stats?.bytes||''].concat(dimScores);
+  });
+  var csv = [header].concat(rows).map(function(r) {
+    return r.map(function(v) { var s = String(v); return s.includes(',') || s.includes('"') ? '"' + s.replace(/"/g,'""') + '"' : s; }).join(',');
+  }).join('\r\n');
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+  a.download = 'repo-report-card.csv';
+  a.click();
+}
+
+// Permalink: load ?team= on page load, update URL on team click
+(function() {
+  var params = new URLSearchParams(window.location.search);
+  var teamParam = params.get('team');
+  if (teamParam) {
+    var target = document.getElementById(teamParam);
+    if (target) { setView('detail'); setTimeout(function() { target.scrollIntoView({ behavior: 'smooth' }); }, 100); }
+  }
+})();
+document.querySelectorAll('.team-item').forEach(function(a) {
+  a.addEventListener('click', function() {
+    var href = a.getAttribute('href');
+    if (href && href.startsWith('#')) {
+      try { history.replaceState(null, '', '?team=' + href.slice(1) + window.location.hash); } catch(e) {}
+    }
+  });
+});
 
 document.addEventListener('keydown', function(e) {
   if (e.target.closest('input,textarea,[contenteditable]')) return;
