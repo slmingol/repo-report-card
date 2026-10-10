@@ -1,0 +1,10 @@
+src/
+tsconfig.json
+media/screenshots/
+demo/
+.github/
+*.vsix
+.vscode-test/
+*.log
+.vscode/
+node_modules/

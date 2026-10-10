@@ -14,15 +14,20 @@
     "skinner": "./out/cli.js",
     "skinner-render": "./out/render.js"
   },
+  "author": "slmingol",
+  "license": "MIT",
+  "keywords": ["hackathon", "judging", "scorecard", "claude", "ai"],
   "files": [
     "out/**/*.js",
     "imgs/cropped/*.png",
+    "media/logo.png",
     "README.md"
   ],
   "scripts": {
     "build": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run build"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

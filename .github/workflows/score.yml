@@ -1,0 +1,96 @@
+name: Score Repos
+
+on:
+  workflow_dispatch:
+    inputs:
+      repos:
+        description: 'Repos to score (one owner/repo per line)'
+        required: true
+        type: string
+      since:
+        description: 'Hackathon start date (YYYY-MM-DD)'
+        required: false
+        type: string
+      event_name:
+        description: 'Event name (e.g. "Acme Hackathon 2026")'
+        required: false
+        type: string
+      jobs:
+        description: 'Parallel scoring jobs'
+        required: false
+        default: '2'
+        type: string
+
+jobs:
+  score:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install repo-report-card
+        run: npm install -g repo-report-card
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Install GitHub CLI
+        run: |
+          type -p curl >/dev/null || (apt update && apt install curl -y)
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+          chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+          apt update && apt install gh -y
+
+      - name: Write repos.txt
+        run: echo "${{ inputs.repos }}" > repos.txt
+
+      - name: Score all repos
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SINCE_ARG: ${{ inputs.since && format('--since {0}', inputs.since) || '' }}
+          EVENT_ARG: ${{ inputs.event_name }}
+          JOBS: ${{ inputs.jobs }}
+        run: |
+          while IFS= read -r repo; do
+            [[ "$repo" =~ ^#|^[[:space:]]*$ ]] && continue
+            slug=$(echo "$repo" | sed 's|.*/||')
+            printf "Scoring %s\n" "$repo"
+            principal-skinner "$repo" ${SINCE_ARG} \
+              | claude -p "$(cat README.md | sed -n '/## Technical Complexity Rubric/,$p')
+          ${EVENT_ARG:+The event name is \"$EVENT_ARG\". Use this exact string for the \`event\` field.}
+          Output ONLY a raw JSON object. No prose, no markdown, no code fences. Raw JSON only." \
+              --allowedTools '' 2>/dev/null > "${slug}-score.json" &
+            # throttle parallel jobs
+            running=$(jobs -r | wc -l)
+            [[ $running -ge $JOBS ]] && wait -n
+          done < repos.txt
+          wait
+
+      - name: Render scorecards
+        run: skinner-render *-score.json > scorecards.html
+
+      - name: Upload scorecards
+        uses: actions/upload-artifact@v4
+        with:
+          name: scorecards-${{ github.run_number }}
+          path: |
+            scorecards.html
+            *-score.json
+          retention-days: 30
+
+      - name: Commit score files (optional)
+        if: ${{ github.event.inputs.repos != '' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add *-score.json scorecards.html 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "scores: $(date -u +%Y-%m-%d) run #${{ github.run_number }}"
+          git push || true
