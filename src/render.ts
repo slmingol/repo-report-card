@@ -678,9 +678,11 @@ function buildCombinedHtml(sections: Section[], skinnerImgs: string[], rubric: s
   <span class="ov-row-grade" style="background:${bg};color:${color}">${s.grade}<br><span style="font-size:10px;opacity:.8">${s.score}/70</span></span>
   <div class="ov-row-info">
     <div class="ov-row-name">${escHtml(s.name)}</div>
-    <div class="ov-row-chips">${chips}</div>
+    <div class="ov-row-bottom">
+      <div class="ov-row-chips">${chips}</div>
+      <div class="ov-row-tldr">${tldrShort}</div>
+    </div>
   </div>
-  <div class="ov-row-tldr">${tldrShort}</div>
   <div class="ov-row-score">
     <div><span class="ov-row-score-val">${s.score}</span><span class="ov-row-score-denom"> /70</span></div>
     <div class="ov-row-bar"><div class="ov-row-bar-fill" style="width:${pct}%"></div></div>
@@ -803,19 +805,20 @@ body {
 .ov-stat-lbl { font-size: 9px; color: var(--fg-dim); text-transform: uppercase; letter-spacing: .06em; font-weight: 500; margin-block-start: 1px; }
 .ov-tldr { font-size: 12px; color: var(--fg-muted); font-style: italic; line-height: 1.5; margin: 0; }
 .ov-list { display: flex; flex-direction: column; gap: 6px; }
-.ov-row { display: grid; grid-template-columns: 24px 44px 1fr auto 110px; align-items: center; gap: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; text-decoration: none; color: inherit; transition: border-color .15s, box-shadow .15s; }
+.ov-row { display: grid; grid-template-columns: 28px 58px 1fr 120px; align-items: center; gap: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; text-decoration: none; color: inherit; transition: border-color .15s, box-shadow .15s; }
 .ov-row:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(8,145,178,.12); }
-.ov-rank { font-family: var(--font-mono); font-size: 11px; color: var(--fg-dim); font-weight: 700; text-align: center; }
-.ov-row-grade { font-family: var(--font-mono); font-size: 11px; font-weight: 700; padding: 3px 7px; border-radius: 6px; white-space: nowrap; text-align: center; }
+.ov-rank { font-family: var(--font-mono); font-size: 13px; color: var(--fg-dim); font-weight: 700; text-align: center; }
+.ov-row-grade { font-family: var(--font-mono); font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 6px; white-space: nowrap; text-align: center; }
 .ov-row-info { min-width: 0; }
-.ov-row-name { font-family: var(--font-head); font-size: 14px; font-weight: 700; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ov-row-chips { display: flex; gap: 6px; margin-block-start: 6px; flex-wrap: wrap; }
-.ov-row-chip { background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; text-align: center; min-width: 56px; }
+.ov-row-name { font-family: var(--font-head); font-size: 16px; font-weight: 700; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-block-end: 8px; }
+.ov-row-bottom { display: flex; align-items: flex-start; gap: 14px; }
+.ov-row-chips { display: flex; gap: 6px; flex-shrink: 0; }
+.ov-row-chip { background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; text-align: center; min-width: 58px; }
 .ov-chip-val { font-family: var(--font-head); font-size: 14px; font-weight: 700; color: var(--fg); font-variant-numeric: tabular-nums; line-height: 1.2; }
 .ov-chip-lbl { font-family: var(--font-mono); font-size: 8px; text-transform: uppercase; letter-spacing: .07em; color: var(--fg-dim); margin-block-start: 2px; }
-.ov-row-tldr { font-size: 12px; color: var(--fg-muted); font-style: italic; line-height: 1.4; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-.ov-row-score { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
-.ov-row-score-val { font-family: var(--font-head); font-size: 20px; font-weight: 800; color: var(--score); font-variant-numeric: tabular-nums; line-height: 1; }
+.ov-row-tldr { flex: 1; font-size: 13px; color: var(--fg-muted); font-style: italic; line-height: 1.5; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; min-width: 0; padding-block-start: 4px; }
+.ov-row-score { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.ov-row-score-val { font-family: var(--font-head); font-size: 22px; font-weight: 800; color: var(--score); font-variant-numeric: tabular-nums; line-height: 1; }
 .ov-row-score-denom { font-size: 11px; color: var(--fg-dim); font-weight: 400; font-family: var(--font-mono); }
 .ov-row-bar { width: 100%; height: 4px; background: var(--bar-track); border-radius: 2px; overflow: hidden; }
 .ov-row-bar-fill { height: 100%; border-radius: 2px; background: var(--score); }
