@@ -635,7 +635,7 @@ function buildCombinedHtml(sections: Section[], skinnerImgs: string[], rubric: s
       <span class="score-num">${s.score}<span class="denom">/70</span></span>
     </span>
   </a>
-  <button class="open-tab-btn" onclick="openScoreInTab('${s.slug}')" title="Open in new tab">↗</button>
+  <a class="open-tab-btn" data-open-slug="${s.slug}" href="#" target="_blank" title="Open in new tab">↗</a>
 </div>`;
     }).join('\n');
 
@@ -661,17 +661,17 @@ function buildCombinedHtml(sections: Section[], skinnerImgs: string[], rubric: s
             return `<div class="ov-stat"><div class="ov-stat-num">${escHtml(v)}</div><div class="ov-stat-lbl">${escHtml(k)}</div></div>`;
         }).join('');
         const tldr = s.tldr ? `<p class="ov-tldr">${escHtml(s.tldr.slice(0, 220))}${s.tldr.length > 220 ? '…' : ''}</p>` : '';
-        return `<a class="ov-card" href="#${s.slug}" data-name="${s.name.toLowerCase()}">
+        return `<div class="ov-card" data-href="#${s.slug}" data-name="${s.name.toLowerCase()}">
   <div class="ov-card-head">
     <span class="ov-name">${escHtml(s.name)}</span>
     <div style="display:flex;align-items:flex-start;gap:6px">
       <div class="ov-grade" style="background:${bg};color:${color}"><span class="ov-grade-letter">${s.grade}</span><span class="ov-grade-score">${s.score}/70</span></div>
-      <button class="open-tab-btn" onclick="event.preventDefault();event.stopPropagation();openScoreInTab('${s.slug}')" title="Open in new tab">↗</button>
+      <a class="open-tab-btn" data-open-slug="${s.slug}" href="#" target="_blank" title="Open in new tab" onclick="event.stopPropagation()">↗</a>
     </div>
   </div>
   <div class="ov-stats">${statsHtml}</div>
   ${tldr}
-</a>`;
+</div>`;
     }).join('\n');
 
     const overviewRows = sections.map((s, i) => {
@@ -684,7 +684,7 @@ function buildCombinedHtml(sections: Section[], skinnerImgs: string[], rubric: s
         }).join('');
         const pct = Math.round((s.score / 70) * 100);
         const tldrShort = s.tldr ? escHtml(s.tldr.slice(0, 120)) + (s.tldr.length > 120 ? '…' : '') : '';
-        return `<a class="ov-row" href="#${s.slug}" data-name="${s.name.toLowerCase()}">
+        return `<div class="ov-row" data-href="#${s.slug}" data-name="${s.name.toLowerCase()}">
   <span class="ov-rank">${i + 1}</span>
   <div class="ov-row-grade" style="background:${bg};color:${color}"><span class="ov-grade-letter">${s.grade}</span><span class="ov-grade-score">${s.score}/70</span></div>
   <div class="ov-row-info">
@@ -698,8 +698,8 @@ function buildCombinedHtml(sections: Section[], skinnerImgs: string[], rubric: s
     <div><span class="ov-row-score-val">${s.score}</span><span class="ov-row-score-denom"> /70</span></div>
     <div class="ov-row-bar"><div class="ov-row-bar-fill" style="width:${pct}%"></div></div>
   </div>
-  <button class="open-tab-btn" onclick="event.preventDefault();event.stopPropagation();openScoreInTab('${s.slug}')" title="Open in new tab" style="align-self:center">↗</button>
-</a>`;
+  <a class="open-tab-btn" data-open-slug="${s.slug}" href="#" target="_blank" title="Open in new tab" onclick="event.stopPropagation()" style="align-self:center">↗</a>
+</div>`;
     }).join('\n');
 
     return `<!doctype html>
@@ -811,7 +811,7 @@ body {
 .ov-view-btn { padding: 4px 10px; font-size: 10px; font-family: var(--font-mono); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; border: none; border-radius: 4px; background: transparent; color: var(--fg-muted); cursor: pointer; transition: background .12s, color .12s; }
 .ov-view-btn.active { background: var(--accent); color: #fff; }
 .overview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
-.ov-card { display: block; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; text-decoration: none; color: inherit; transition: border-color .15s, box-shadow .15s; }
+.ov-card { display: block; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; color: inherit; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
 .ov-card:hover { border-color: var(--accent); box-shadow: 0 2px 12px rgba(8,145,178,.15); }
 .ov-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-block-end: 10px; }
 .ov-name { font-family: var(--font-head); font-size: 14px; font-weight: 700; color: var(--fg); line-height: 1.3; flex: 1; min-width: 0; word-break: break-word; }
@@ -822,7 +822,7 @@ body {
 .ov-stat-lbl { font-size: 9px; color: var(--fg-dim); text-transform: uppercase; letter-spacing: .06em; font-weight: 500; margin-block-start: 1px; }
 .ov-tldr { font-size: 12px; color: var(--fg-muted); font-style: italic; line-height: 1.5; margin: 0; }
 .ov-list { display: flex; flex-direction: column; gap: 6px; }
-.ov-row { display: grid; grid-template-columns: 28px 70px 1fr 120px 28px; align-items: stretch; gap: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; text-decoration: none; color: inherit; transition: border-color .15s, box-shadow .15s; }
+.ov-row { display: grid; grid-template-columns: 28px 70px 1fr 120px 28px; align-items: stretch; gap: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; color: inherit; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
 .ov-row:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(8,145,178,.12); }
 .ov-rank { font-family: var(--font-mono); font-size: 13px; color: var(--fg-dim); font-weight: 700; text-align: center; align-self: center; }
 .ov-row-grade { font-family: var(--font-mono); font-weight: 700; border-radius: 8px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 10px 8px; }
@@ -956,8 +956,8 @@ function setView(v) {
 // Overview tile/row → switch to detail view and scroll to section
 document.querySelectorAll('.ov-card, .ov-row').forEach(function(card) {
   card.addEventListener('click', function(e) {
-    e.preventDefault();
-    var href = card.getAttribute('href');
+    if (e.target.closest('.open-tab-btn')) return;
+    var href = card.dataset.href;
     setView('detail');
     if (href) {
       var target = document.querySelector(href);
@@ -1017,33 +1017,24 @@ function toggleTheme() {
   } catch(e) {}
 })();
 
-var scoreUrls = {};
+function setOpenTabHref(slug, url) {
+  document.querySelectorAll('[data-open-slug="' + slug + '"]').forEach(function(el) {
+    el.href = url;
+  });
+}
 document.querySelectorAll('.team-section').forEach(function(sec) {
   var f = sec.querySelector('iframe.scorecard-frame');
   if (!f) return;
   function cache() {
     try {
       var html = f.contentDocument.documentElement.outerHTML;
-      scoreUrls[sec.id] = URL.createObjectURL(new Blob([html], {type:'text/html'}));
+      var url = URL.createObjectURL(new Blob([html], {type:'text/html'}));
+      setOpenTabHref(sec.id, url);
     } catch(e) {}
   }
   if (f.contentDocument && f.contentDocument.readyState === 'complete') cache();
   else f.addEventListener('load', cache);
 });
-function openScoreInTab(slug) {
-  var url = scoreUrls[slug];
-  if (!url) {
-    var f = document.querySelector('#' + slug + ' iframe.scorecard-frame');
-    if (!f) return;
-    try {
-      var html = f.contentDocument.documentElement.outerHTML;
-      url = URL.createObjectURL(new Blob([html], {type:'text/html'}));
-    } catch(e) { return; }
-  }
-  var w = window.open(url, '_blank');
-  if (w) w.blur();
-  window.focus();
-}
 
 function printActive() {
   var f = document.querySelector('.team-section:not([style*="display: none"]) iframe.scorecard-frame') ||
