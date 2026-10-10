@@ -166,12 +166,14 @@ screenshot:
 	@command -v shot-scraper >/dev/null 2>&1 || (printf "$(RD)error:$(R) shot-scraper not found — pip install shot-scraper && playwright install chromium\n" && exit 1)
 	@printf "\n$(CY)▶$(R) Rendering demo HTML\n"
 	@skinner-render demo/*.json > /tmp/rrc-demo.html
+	@sed 's/<html lang="en">/<html lang="en" data-theme="dark">/' /tmp/rrc-demo.html > /tmp/rrc-demo-dark.html
 	@printf "$(CY)▶$(R) Starting server on port $(SHOT_PORT)\n"
-	@python3 -m http.server $(SHOT_PORT) --directory /tmp &>/tmp/rrc-srv.log & SRV=$$!; \
-	sleep 1; \
+	@lsof -ti :$(SHOT_PORT) | xargs kill -9 2>/dev/null; true
+	@python3 -m http.server $(SHOT_PORT) --directory /tmp >/tmp/rrc-srv.log 2>&1 & SRV=$$!; \
+	until curl -sf "http://localhost:$(SHOT_PORT)/rrc-demo.html" -o /dev/null; do sleep 0.3; done; \
 	BASE="http://localhost:$(SHOT_PORT)/rrc-demo.html"; \
+	BASED="http://localhost:$(SHOT_PORT)/rrc-demo-dark.html"; \
 	OUT="media/screenshots"; \
-	DARK="document.documentElement.setAttribute('data-theme','dark');"; \
 	printf "$(CY)▶$(R) Capturing light mode\n"; \
 	shot-scraper "$$BASE" -o "$$OUT/01-detail-view.png"      --width 1440 --height 900 --timeout 2000 2>/dev/null; \
 	shot-scraper "$$BASE" -o "$$OUT/02-overview-grid.png"    --width 1440 --height 900 --javascript "document.getElementById('btnOverview').click();" --wait-for "document.getElementById('btnOverview').classList.contains('active')" --timeout 2000 2>/dev/null; \
@@ -179,10 +181,10 @@ screenshot:
 	shot-scraper "$$BASE" -o "$$OUT/04-sidebar.png"          --width 1440 --height 900 --selector aside --timeout 2000 2>/dev/null; \
 	shot-scraper "$$BASE" -o "$$OUT/05-detail-dims.png"      --width 1440 --height 900 --javascript "window.scrollTo(0,800);" --timeout 2000 2>/dev/null; \
 	printf "$(CY)▶$(R) Capturing dark mode\n"; \
-	shot-scraper "$$BASE" -o "$$OUT/01-detail-view-dark.png"   --width 1440 --height 900 --javascript "$$DARK" --timeout 2000 2>/dev/null; \
-	shot-scraper "$$BASE" -o "$$OUT/02-overview-grid-dark.png" --width 1440 --height 900 --javascript "$$DARK document.getElementById('btnOverview').click();" --wait-for "document.getElementById('btnOverview').classList.contains('active')" --timeout 2000 2>/dev/null; \
-	shot-scraper "$$BASE" -o "$$OUT/03-overview-list-dark.png" --width 1440 --height 900 --javascript "$$DARK document.getElementById('btnOverview').click(); document.getElementById('btnOvList').click();" --wait-for "document.getElementById('btnOvList').classList.contains('active')" --timeout 2000 2>/dev/null; \
-	shot-scraper "$$BASE" -o "$$OUT/04-sidebar-dark.png"       --width 1440 --height 900 --javascript "$$DARK" --selector aside --timeout 2000 2>/dev/null; \
-	shot-scraper "$$BASE" -o "$$OUT/05-detail-dims-dark.png"   --width 1440 --height 900 --javascript "$$DARK window.scrollTo(0,800);" --timeout 2000 2>/dev/null; \
+	shot-scraper "$$BASED" -o "$$OUT/01-detail-view-dark.png"   --width 1440 --height 900 --wait-for "document.querySelector('iframe.scorecard-frame') !== null" --timeout 3000 2>/dev/null; \
+	shot-scraper "$$BASED" -o "$$OUT/02-overview-grid-dark.png" --width 1440 --height 900 --javascript "document.getElementById('btnOverview').click();" --wait-for "document.getElementById('btnOverview').classList.contains('active')" --timeout 3000 2>/dev/null; \
+	shot-scraper "$$BASED" -o "$$OUT/03-overview-list-dark.png" --width 1440 --height 900 --javascript "document.getElementById('btnOverview').click(); document.getElementById('btnOvList').click();" --wait-for "document.getElementById('btnOvList').classList.contains('active')" --timeout 3000 2>/dev/null; \
+	shot-scraper "$$BASED" -o "$$OUT/04-sidebar-dark.png"       --width 1440 --height 900 --selector aside --timeout 3000 2>/dev/null; \
+	shot-scraper "$$BASED" -o "$$OUT/05-detail-dims-dark.png"   --width 1440 --height 900 --javascript "window.scrollTo(0,800);" --timeout 3000 2>/dev/null; \
 	kill $$SRV 2>/dev/null; \
 	printf "$(GR)✓$(R) 10 screenshots written to $(B)$$OUT/$(R)\n\n"
