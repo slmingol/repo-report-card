@@ -627,13 +627,16 @@ function buildCombinedHtml(sections: Section[], skinnerImgs: string[], rubric: s
     const sidebarItems = sections.map(s => {
         const color = GRADE_COLOR[s.grade] ?? '#566079';
         const bg = GRADE_BG[s.grade] ?? '#F1F5F9';
-        return `<a class="team-item" href="#${s.slug}" data-name="${s.name.toLowerCase()}">
-  <span class="team-name">${escHtml(s.name)}</span>
-  <span class="team-badges">
-    <span class="grade-pill" style="background:${bg};color:${color}">${s.grade}</span>
-    <span class="score-num">${s.score}<span class="denom">/70</span></span>
-  </span>
-</a>`;
+        return `<div class="team-item-wrap">
+  <a class="team-item" href="#${s.slug}" data-name="${s.name.toLowerCase()}">
+    <span class="team-name">${escHtml(s.name)}</span>
+    <span class="team-badges">
+      <span class="grade-pill" style="background:${bg};color:${color}">${s.grade}</span>
+      <span class="score-num">${s.score}<span class="denom">/70</span></span>
+    </span>
+  </a>
+  <button class="open-tab-btn" onclick="openScoreInTab('${s.slug}')" title="Open in new tab">↗</button>
+</div>`;
     }).join('\n');
 
     const contentSections = sections.map(s => {
@@ -661,7 +664,10 @@ function buildCombinedHtml(sections: Section[], skinnerImgs: string[], rubric: s
         return `<a class="ov-card" href="#${s.slug}" data-name="${s.name.toLowerCase()}">
   <div class="ov-card-head">
     <span class="ov-name">${escHtml(s.name)}</span>
-    <div class="ov-grade" style="background:${bg};color:${color}"><span class="ov-grade-letter">${s.grade}</span><span class="ov-grade-score">${s.score}/70</span></div>
+    <div style="display:flex;align-items:flex-start;gap:6px">
+      <div class="ov-grade" style="background:${bg};color:${color}"><span class="ov-grade-letter">${s.grade}</span><span class="ov-grade-score">${s.score}/70</span></div>
+      <button class="open-tab-btn" onclick="event.preventDefault();event.stopPropagation();openScoreInTab('${s.slug}')" title="Open in new tab">↗</button>
+    </div>
   </div>
   <div class="ov-stats">${statsHtml}</div>
   ${tldr}
@@ -692,6 +698,7 @@ function buildCombinedHtml(sections: Section[], skinnerImgs: string[], rubric: s
     <div><span class="ov-row-score-val">${s.score}</span><span class="ov-row-score-denom"> /70</span></div>
     <div class="ov-row-bar"><div class="ov-row-bar-fill" style="width:${pct}%"></div></div>
   </div>
+  <button class="open-tab-btn" onclick="event.preventDefault();event.stopPropagation();openScoreInTab('${s.slug}')" title="Open in new tab" style="align-self:center">↗</button>
 </a>`;
     }).join('\n');
 
@@ -778,8 +785,13 @@ body {
 .search:focus { border-color: var(--accent); }
 .search::placeholder { color: var(--fg-dim); }
 .team-list { overflow-y: auto; flex: 1; padding: 6px 0; }
-.team-item { display: flex; align-items: center; gap: 8px; padding: 9px 14px; text-decoration: none; color: var(--fg); border-left: 3px solid transparent; transition: background .1s, border-color .1s; cursor: pointer; }
-.team-item:hover, .team-item.active { background: var(--surface-2); border-left-color: var(--accent); }
+.team-item-wrap { display: flex; align-items: center; border-left: 3px solid transparent; transition: background .1s, border-color .1s; }
+.team-item-wrap:hover, .team-item-wrap:has(.team-item.active) { background: var(--surface-2); border-left-color: var(--accent); }
+.team-item { display: flex; align-items: center; gap: 8px; padding: 9px 8px 9px 14px; text-decoration: none; color: var(--fg); flex: 1; min-width: 0; cursor: pointer; }
+.team-item:hover, .team-item.active { background: none; border-left: none; }
+.open-tab-btn { background: none; border: none; cursor: pointer; color: var(--fg-dim); font-size: 13px; padding: 4px 8px; line-height: 1; border-radius: 4px; flex-shrink: 0; opacity: 0; transition: opacity .15s, color .15s, background .15s; }
+.team-item-wrap:hover .open-tab-btn, .ov-card:hover .open-tab-btn, .ov-row:hover .open-tab-btn { opacity: 1; }
+.open-tab-btn:hover { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
 .team-name { flex: 1; font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--fg); }
 .team-badges { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .grade-pill { font-family: var(--font-head); font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; line-height: 1.5; }
@@ -810,7 +822,7 @@ body {
 .ov-stat-lbl { font-size: 9px; color: var(--fg-dim); text-transform: uppercase; letter-spacing: .06em; font-weight: 500; margin-block-start: 1px; }
 .ov-tldr { font-size: 12px; color: var(--fg-muted); font-style: italic; line-height: 1.5; margin: 0; }
 .ov-list { display: flex; flex-direction: column; gap: 6px; }
-.ov-row { display: grid; grid-template-columns: 28px 70px 1fr 120px; align-items: stretch; gap: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; text-decoration: none; color: inherit; transition: border-color .15s, box-shadow .15s; }
+.ov-row { display: grid; grid-template-columns: 28px 70px 1fr 120px 28px; align-items: stretch; gap: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; text-decoration: none; color: inherit; transition: border-color .15s, box-shadow .15s; }
 .ov-row:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(8,145,178,.12); }
 .ov-rank { font-family: var(--font-mono); font-size: 13px; color: var(--fg-dim); font-weight: 700; text-align: center; align-self: center; }
 .ov-row-grade { font-family: var(--font-mono); font-weight: 700; border-radius: 8px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 10px 8px; }
@@ -1004,6 +1016,32 @@ function toggleTheme() {
     if (saved) { applyTheme(saved); }
   } catch(e) {}
 })();
+
+var scoreUrls = {};
+document.querySelectorAll('.team-section').forEach(function(sec) {
+  var f = sec.querySelector('iframe.scorecard-frame');
+  if (!f) return;
+  function cache() {
+    try {
+      var html = f.contentDocument.documentElement.outerHTML;
+      scoreUrls[sec.id] = URL.createObjectURL(new Blob([html], {type:'text/html'}));
+    } catch(e) {}
+  }
+  if (f.contentDocument && f.contentDocument.readyState === 'complete') cache();
+  else f.addEventListener('load', cache);
+});
+function openScoreInTab(slug) {
+  var url = scoreUrls[slug];
+  if (!url) {
+    var f = document.querySelector('#' + slug + ' iframe.scorecard-frame');
+    if (!f) return;
+    try {
+      var html = f.contentDocument.documentElement.outerHTML;
+      url = URL.createObjectURL(new Blob([html], {type:'text/html'}));
+    } catch(e) { return; }
+  }
+  window.open(url, '_blank', 'noopener');
+}
 
 function printActive() {
   var f = document.querySelector('.team-section:not([style*="display: none"]) iframe.scorecard-frame') ||
