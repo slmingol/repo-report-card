@@ -251,6 +251,12 @@ function pickImg(imgs: string[]): string {
     return imgs.length ? imgs[Math.floor(Math.random() * imgs.length)] : '';
 }
 
+const FAVICON: string = (() => {
+    const p = path.resolve(__dirname, '../media/logo.png');
+    try { return 'data:image/png;base64,' + fs.readFileSync(p).toString('base64'); }
+    catch { return ''; }
+})();
+
 // ── Scorecard CSS (single source of truth for rendering) ──────────────────────
 
 const SCORECARD_CSS = `
@@ -346,15 +352,7 @@ body {
 .total-score .big { font-family: var(--font-head); font-size: clamp(48px,10vw,68px); font-weight: 800; line-height: 1; color: var(--score); font-variant-numeric: tabular-nums; }
 .total-score .denom { font-family: var(--font-mono); font-size: 20px; color: var(--fg-dim); }
 .score-divider { width: 1px; height: 52px; background: var(--border); flex-shrink: 0; }
-.score-breakdown { flex: 1; min-width: 180px; }
-.score-breakdown .label { font-family: var(--font-head); font-size: 15px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--fg-muted); margin-block-end: 10px; }
-.mini-bars { display: flex; flex-direction: column; gap: 7px; }
-.mini-bar-row { display: flex; align-items: center; gap: 10px; }
-.mini-bar-row .dim-abbr { font-family: var(--font-mono); font-size: 11.5px; width: 140px; flex-shrink: 0; letter-spacing: .04em; color: var(--fg-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mini-bar-track { flex: 1; height: 8px; border-radius: 4px; background: var(--bar-track); overflow: hidden; }
-.mini-bar-fill { height: 100%; border-radius: 4px; background: var(--max); }
-.mini-bar-fill.partial { background: var(--score); }
-.mini-bar-row .sc { font-family: var(--font-head); font-size: 13px; font-weight: 700; width: 22px; text-align: right; font-variant-numeric: tabular-nums; color: var(--fg); }
+.score-breakdown { flex: 1; min-width: 200px; display: flex; align-items: center; justify-content: center; }
 .section-head { font-family: var(--font-head); font-size: 15px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--fg-muted); margin: 0 0 12px; }
 .dimensions { display: flex; flex-direction: column; gap: 12px; margin-block-end: 20px; }
 .dim-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 20px 22px; }
@@ -386,6 +384,63 @@ const DIM_ABBR: Record<string, string> = {
     'Innovation': 'Innov', 'Operational Readiness': 'Ops',
 };
 
+function radarSvg(dims: Dimension[]): string {
+    const n = dims.length;
+    if (!n) return '';
+    const cx = 110, cy = 110, r = 82, labelR = 104;
+    const ang = (i: number) => -Math.PI / 2 + (2 * Math.PI * i / n);
+    const ptx = (i: number, v: number) => (cx + (v / 10) * r * Math.cos(ang(i))).toFixed(1);
+    const pty = (i: number, v: number) => (cy + (v / 10) * r * Math.sin(ang(i))).toFixed(1);
+
+    const rings = [2, 4, 6, 8, 10].map(v => {
+        const rr = (v / 10) * r;
+        const pts = Array.from({length: n}, (_, i) =>
+            `${(cx + rr * Math.cos(ang(i))).toFixed(1)},${(cy + rr * Math.sin(ang(i))).toFixed(1)}`
+        ).join(' ');
+        return `<polygon points="${pts}" fill="none" stroke="var(--bar-track)" stroke-width="${v === 10 ? 1.5 : 0.8}" opacity="${v === 10 ? 0.6 : 0.3}"/>`;
+    }).join('');
+
+    const axes = Array.from({length: n}, (_, i) =>
+        `<line x1="${cx}" y1="${cy}" x2="${(cx + r * Math.cos(ang(i))).toFixed(1)}" y2="${(cy + r * Math.sin(ang(i))).toFixed(1)}" stroke="var(--bar-track)" stroke-width="0.8" opacity="0.4"/>`
+    ).join('');
+
+    const poly = dims.map((d, i) => `${ptx(i, d.score)},${pty(i, d.score)}`).join(' ');
+
+    const labels = dims.map((d, i) => {
+        const a = ang(i);
+        const lx = (cx + labelR * Math.cos(a)).toFixed(1);
+        const ly = (cy + labelR * Math.sin(a)).toFixed(1);
+        const anchor = Math.abs(Math.cos(a)) < 0.15 ? 'middle' : Math.cos(a) > 0 ? 'start' : 'end';
+        const base = Math.sin(a) < -0.5 ? 'auto' : Math.sin(a) > 0.5 ? 'hanging' : 'middle';
+        const short = DIM_ABBR[d.name] ?? d.name.slice(0, 5);
+        return `<text x="${lx}" y="${ly}" text-anchor="${anchor}" dominant-baseline="${base}" font-family="var(--font-mono)" font-size="9" fill="var(--fg-muted)" letter-spacing=".03em">${escHtml(short)}</text>`;
+    }).join('');
+
+    const dots = dims.map((d, i) =>
+        `<circle cx="${ptx(i, d.score)}" cy="${pty(i, d.score)}" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5"><title>${escHtml(d.name)}: ${d.score}/10</title></circle>`
+    ).join('');
+
+    const scoreNums = dims.map((d, i) => {
+        const a = ang(i);
+        const ox = 11 * Math.cos(a), oy = 11 * Math.sin(a);
+        const nx = (parseFloat(ptx(i, d.score)) + ox).toFixed(1);
+        const ny = (parseFloat(pty(i, d.score)) + oy).toFixed(1);
+        const anchor = Math.cos(a) > 0.15 ? 'start' : Math.cos(a) < -0.15 ? 'end' : 'middle';
+        const base = Math.sin(a) > 0.15 ? 'hanging' : Math.sin(a) < -0.15 ? 'auto' : 'middle';
+        return `<text x="${nx}" y="${ny}" text-anchor="${anchor}" dominant-baseline="${base}" font-family="var(--font-head)" font-size="9.5" font-weight="700" fill="var(--accent)" opacity="0.9">${d.score}</text>`;
+    }).join('');
+
+    return `<svg viewBox="0 0 220 220" width="200" height="200" role="img" aria-label="Dimension scores radar chart">
+  <title>Dimension scores</title>
+  ${rings}
+  ${axes}
+  <polygon points="${poly}" fill="var(--accent)" fill-opacity="0.12" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>
+  ${dots}
+  ${labels}
+  ${scoreNums}
+</svg>`;
+}
+
 function quipBlock(text: string, imgSrc: string): string {
     const imgTag = imgSrc
         ? `<img class="skinner-img" src="${imgSrc}" alt="Principal Skinner">`
@@ -404,14 +459,6 @@ function renderScorecardHtml(data: ScoreData, imgs: string[]): string {
     const pillClass = (s: number) => s === 10 ? 'max' : 'near';
     const barBg = (s: number) => s === 10 ? 'var(--max)' : 'var(--score)';
     const barW = (s: number) => `${(s / 10) * 100}%`;
-    const fillClass = (s: number) => s === 10 ? 'mini-bar-fill' : 'mini-bar-fill partial';
-
-    const miniBars = (data.dimensions ?? []).map(d => `
-      <div class="mini-bar-row">
-        <span class="dim-abbr">${escHtml(d.name)}</span>
-        <div class="mini-bar-track"><div class="${fillClass(d.score)}" style="width:${barW(d.score)}"></div></div>
-        <span class="sc">${d.score}</span>
-      </div>`).join('');
 
     const dimCards = (data.dimensions ?? []).map(d => `
   <div class="dim-card">
@@ -449,6 +496,7 @@ function renderScorecardHtml(data: ScoreData, imgs: string[]): string {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escHtml(data.project_name)} Scorecard</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;600&display=swap">
+${FAVICON ? `<link rel="icon" href="${FAVICON}">` : ''}
 <style>${SCORECARD_CSS}</style>
 </head>
 <body>
@@ -481,9 +529,7 @@ ${quipBlock(data.opening_quip, pickImg(imgs))}
   </div>
   <div class="score-divider"></div>
   <div class="score-breakdown">
-    <div class="label">Dimension Breakdown</div>
-    <div class="mini-bars">${miniBars}
-    </div>
+    ${radarSvg(data.dimensions ?? [])}
   </div>
 </div>
 
@@ -662,7 +708,7 @@ function buildCombinedHtml(sections: Section[], skinnerImgs: string[], rubric: s
             return `<div class="ov-stat"><div class="ov-stat-num">${escHtml(v)}</div><div class="ov-stat-lbl">${escHtml(k)}</div></div>`;
         }).join('');
         const tldr = s.tldr ? `<p class="ov-tldr">${escHtml(s.tldr.slice(0, 220))}${s.tldr.length > 220 ? '…' : ''}</p>` : '';
-        return `<div class="ov-card" data-href="#${s.slug}" data-name="${s.name.toLowerCase()}">
+        return `<div class="ov-card" data-href="#${s.slug}" data-name="${s.name.toLowerCase()}" data-score="${s.score}">
   <div class="ov-card-head">
     <span class="ov-name">${escHtml(s.name)}</span>
     <div style="display:flex;align-items:flex-start;gap:6px">
@@ -685,7 +731,7 @@ function buildCombinedHtml(sections: Section[], skinnerImgs: string[], rubric: s
         }).join('');
         const pct = Math.round((s.score / 70) * 100);
         const tldrShort = s.tldr ? escHtml(s.tldr.slice(0, 120)) + (s.tldr.length > 120 ? '…' : '') : '';
-        return `<div class="ov-row" data-href="#${s.slug}" data-name="${s.name.toLowerCase()}">
+        return `<div class="ov-row" data-href="#${s.slug}" data-name="${s.name.toLowerCase()}" data-score="${s.score}">
   <span class="ov-rank">${i + 1}</span>
   <div class="ov-row-grade" style="background:${bg};color:${color}"><span class="ov-grade-letter">${s.grade}</span><span class="ov-grade-score">${s.score}/70</span></div>
   <div class="ov-row-info">
@@ -710,6 +756,7 @@ function buildCombinedHtml(sections: Section[], skinnerImgs: string[], rubric: s
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Repo Report Card — Hackathon Scorecards (${sections.length} teams)</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;600&display=swap">
+${FAVICON ? `<link rel="icon" href="${FAVICON}">` : ''}
 <style>
 :root {
   --bg:        #F4F6FA;
@@ -808,6 +855,9 @@ body {
 .view-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 .overview-panel { padding: 24px 20px; }
 .ov-toolbar { display: flex; align-items: center; justify-content: flex-end; margin-block-end: 16px; }
+.ov-sort { display: flex; gap: 3px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 3px; margin-right: 8px; }
+.ov-sort-btn { padding: 4px 10px; font-size: 10px; font-family: var(--font-mono); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; border: none; border-radius: 4px; background: transparent; color: var(--fg-muted); cursor: pointer; transition: background .12s, color .12s; }
+.ov-sort-btn.active { background: var(--surface); color: var(--fg); box-shadow: 0 1px 3px rgba(0,0,0,.1); }
 .ov-view-toggle { display: flex; gap: 3px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 3px; }
 .ov-view-btn { padding: 4px 10px; font-size: 10px; font-family: var(--font-mono); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; border: none; border-radius: 4px; background: transparent; color: var(--fg-muted); cursor: pointer; transition: background .12s, color .12s; }
 .ov-view-btn.active { background: var(--accent); color: #fff; }
@@ -932,6 +982,10 @@ ${sidebarItems}
 <main class="content">
 <div id="overviewPanel" class="overview-panel" style="display:none">
   <div class="ov-toolbar">
+    <div class="ov-sort">
+      <button class="ov-sort-btn active" id="sortScore" onclick="sortOverview('score')">Score ▼</button>
+      <button class="ov-sort-btn" id="sortName" onclick="sortOverview('name')">Name A–Z</button>
+    </div>
     <div class="ov-view-toggle">
       <button class="ov-view-btn active" id="btnOvGrid" onclick="setOvView('grid')">⊞ Grid</button>
       <button class="ov-view-btn" id="btnOvList" onclick="setOvView('list')">≡ List</button>
@@ -1103,6 +1157,41 @@ const observer = new IntersectionObserver(entries => {
   });
 }, { threshold: 0.2 });
 sections.forEach(s => observer.observe(s));
+
+function sortOverview(mode) {
+  document.getElementById('sortScore').classList.toggle('active', mode === 'score');
+  document.getElementById('sortName').classList.toggle('active', mode === 'name');
+  var grid = document.getElementById('overviewGrid');
+  var list = document.getElementById('overviewList');
+  function reorder(container, selector) {
+    var els = Array.from(container.querySelectorAll(selector));
+    els.sort(function(a, b) {
+      return mode === 'score'
+        ? Number(b.dataset.score) - Number(a.dataset.score)
+        : a.dataset.name.localeCompare(b.dataset.name);
+    });
+    els.forEach(function(el) { container.appendChild(el); });
+  }
+  reorder(grid, '.ov-card');
+  reorder(list, '.ov-row');
+  list.querySelectorAll('.ov-rank').forEach(function(el, i) { el.textContent = String(i + 1); });
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.target.closest('input,textarea,[contenteditable]')) return;
+  if (e.key === 'Escape') { document.getElementById('rubricOverlay').classList.remove('open'); return; }
+  if (e.key === 'd' || e.key === 'D') { setView('detail'); return; }
+  if (e.key === 'o' || e.key === 'O') { setView('overview'); return; }
+  if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+  e.preventDefault();
+  var wraps = Array.from(document.querySelectorAll('.team-item-wrap')).filter(function(w) { return w.style.display !== 'none'; });
+  var active = document.querySelector('.team-item.active');
+  var idx = active ? wraps.findIndex(function(w) { return w.contains(active); }) : -1;
+  var next = e.key === 'ArrowDown' ? Math.min(idx + 1, wraps.length - 1) : Math.max(idx - 1, 0);
+  if (idx < 0) next = 0;
+  var link = wraps[next] && wraps[next].querySelector('.team-item');
+  if (link) link.click();
+});
 </script>
 </body>
 </html>`;
