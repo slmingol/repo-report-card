@@ -128,6 +128,45 @@ function parseArgs(argv: string[]): Args {
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
+function markdownInline(s: string): string {
+    return s
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/`([^`]+)`/g, '<code style="font-family:monospace;font-size:.88em">$1</code>');
+}
+
+function rubricToHtml(md: string): string {
+    const lines = md.split('\n');
+    let out = '';
+    let inTable = false;
+    let tableRows = '';
+    let headerSeen = false;
+
+    const flushTable = () => {
+        if (inTable) { out += `<table class="rubric-table">${tableRows}</tbody></table>`; inTable = false; tableRows = ''; headerSeen = false; }
+    };
+
+    for (const line of lines) {
+        const t = line.trim();
+        if (!t) { flushTable(); continue; }
+        if (t.startsWith('## ')) { flushTable(); out += `<p class="rubric-section-head">${markdownInline(t.slice(3))}</p>`; continue; }
+        if (t.startsWith('- ') || t.startsWith('* ')) { flushTable(); out += `<p class="rubric-p">${markdownInline(t.slice(2))}</p>`; continue; }
+        if (t.startsWith('**') || (/^[A-Z]/.test(t) && !t.startsWith('|'))) { flushTable(); out += `<p class="rubric-p">${markdownInline(t)}</p>`; continue; }
+        if (t.startsWith('|')) {
+            const cells = t.split('|').slice(1, -1).map(c => c.trim());
+            if (cells.every(c => /^-+$/.test(c))) { tableRows += '</thead><tbody>'; headerSeen = true; continue; }
+            if (!inTable) { inTable = true; tableRows = '<thead>'; }
+            const tag = headerSeen ? 'td' : 'th';
+            tableRows += `<tr>${cells.map(c => `<${tag}>${markdownInline(c)}</${tag}>`).join('')}</tr>`;
+            continue;
+        }
+        flushTable();
+        out += `<p class="rubric-p">${markdownInline(t)}</p>`;
+    }
+    flushTable();
+    return out;
+}
+
 function gradeFromScore(n: number): string {
     if (n >= 62) return 'A';
     if (n >= 52) return 'B';
@@ -255,16 +294,18 @@ body {
   max-width: 1200px;
   margin: 0 auto;
 }
-.header { padding-block-end: 24px; border-bottom: 1px solid var(--border); margin-block-end: 20px; }
-.event-label { font-family: var(--font-mono); font-size: 15px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); display: block; margin-block-end: 8px; }
-.project-name { font-family: var(--font-head); font-size: clamp(22px,5vw,32px); font-weight: 800; line-height: 1.15; color: var(--fg); margin: 0 0 4px; }
-.project-sub { font-size: 18px; color: var(--fg-muted); font-weight: 300; font-style: italic; margin: 0 0 12px; }
-.meta-table { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; font-size: 16px; margin-block-start: 10px; }
-.meta-lbl { font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--fg-dim); white-space: nowrap; padding-block-start: 2px; }
-.meta-val { color: var(--fg-muted); line-height: 1.5; }
-.meta-val a { color: var(--accent); text-decoration: none; }
+.header { background: var(--surface); border: 1px solid var(--border); border-top: 3px solid var(--accent); border-radius: 10px; padding: 24px 28px 20px; margin-block-end: 20px; }
+.event-label { font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); display: inline-block; background: color-mix(in srgb, var(--accent) 12%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent); border-radius: 20px; padding: 3px 12px; margin-block-end: 14px; }
+.project-name { font-family: var(--font-head); font-size: clamp(28px,6vw,46px); font-weight: 800; line-height: 1.1; color: var(--fg); margin: 0 0 6px; }
+.project-sub { font-size: 19px; color: var(--fg); font-weight: 400; font-style: italic; margin: 0 0 16px; line-height: 1.5; padding-left: 14px; border-left: 3px solid var(--accent); opacity: .85; }
+.meta-table { display: grid; grid-template-columns: auto 1fr; gap: 0; font-size: 15px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
+.meta-row-pair { display: contents; }
+.meta-lbl { font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-dim); white-space: nowrap; padding: 8px 14px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); background: var(--surface); }
+.meta-val { color: var(--fg-muted); line-height: 1.5; padding: 8px 14px; border-bottom: 1px solid var(--border); font-size: 15px; }
+.meta-table > span:nth-last-child(-n+2) { border-bottom: none; }
+.meta-val a { color: var(--accent); text-decoration: none; font-weight: 500; }
 .meta-val a:hover { text-decoration: underline; }
-.meta-tag { display: inline-block; font-family: var(--font-mono); font-size: 11px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; color: var(--fg-dim); margin-inline-start: 6px; vertical-align: middle; }
+.meta-tag { display: inline-block; font-family: var(--font-mono); font-size: 10px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 7px; color: var(--fg-dim); margin-inline-start: 8px; vertical-align: middle; letter-spacing: .04em; }
 .quip { background: var(--quip-bg); border: 1px solid var(--quip-bdr); border-left: 3px solid var(--quip); border-radius: var(--r); padding: 16px; margin-block-end: 20px; display: flex; align-items: center; gap: 20px; }
 .quip-right { flex: 1; display: flex; flex-direction: column; gap: 8px; justify-content: center; }
 .quip-label { font-family: var(--font-mono); font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--quip); white-space: nowrap; }
@@ -558,7 +599,7 @@ function injectSkinnerScript(html: string, imgs: string[]): string {
     return html.replace(/<\/body>/i, js + '</body>');
 }
 
-function buildCombinedHtml(sections: Section[], skinnerImgs: string[]): string {
+function buildCombinedHtml(sections: Section[], skinnerImgs: string[], rubric: string): string {
     const sidebarItems = sections.map(s => {
         const color = GRADE_COLOR[s.grade] ?? '#566079';
         const bg = GRADE_BG[s.grade] ?? '#F1F5F9';
@@ -715,6 +756,19 @@ body {
 .ov-stat-num { font-family: var(--font-head); font-size: 15px; font-weight: 800; color: var(--fg); font-variant-numeric: tabular-nums; line-height: 1.2; }
 .ov-stat-lbl { font-size: 9px; color: var(--fg-dim); text-transform: uppercase; letter-spacing: .06em; font-weight: 500; margin-block-start: 1px; }
 .ov-tldr { font-size: 12px; color: var(--fg-muted); font-style: italic; line-height: 1.5; margin: 0; }
+.rubric-details { border-top: 1px solid var(--border); flex-shrink: 0; overflow: hidden; }
+.rubric-summary { padding: 10px 14px; font-size: 10px; font-family: var(--font-mono); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-muted); cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px; user-select: none; }
+.rubric-summary::-webkit-details-marker { display: none; }
+.rubric-summary::before { content: '▶'; font-size: 7px; color: var(--accent); transition: transform .15s; flex-shrink: 0; }
+.rubric-details[open] .rubric-summary::before { transform: rotate(90deg); }
+.rubric-body { padding: 0 12px 14px; overflow-y: auto; max-height: 55vh; }
+.rubric-section-head { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); margin: 14px 0 6px; }
+.rubric-p { font-size: 10px; color: var(--fg-muted); line-height: 1.5; margin: 0 0 6px; }
+.rubric-table { width: 100%; border-collapse: collapse; font-size: 9.5px; margin-block-end: 10px; }
+.rubric-table th { background: var(--surface-2); color: var(--fg-dim); font-weight: 700; text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.rubric-table td { padding: 4px 6px; border-bottom: 1px solid var(--border); color: var(--fg-muted); vertical-align: top; line-height: 1.4; }
+.rubric-table tr:last-child td { border-bottom: none; }
+.rubric-table td:first-child, .rubric-table th:first-child { white-space: nowrap; font-weight: 600; color: var(--fg); }
 @media (max-width: 700px) {
   :root { --sidebar-w: 0px; }
   .sidebar { display: none; }
@@ -739,6 +793,10 @@ body {
 ${sidebarItems}
   </nav>
   <div class="no-match" id="noMatch">No teams match.</div>
+  <details class="rubric-details">
+    <summary class="rubric-summary">Scoring Rubric</summary>
+    <div class="rubric-body">${rubricToHtml(rubric)}</div>
+  </details>
 </aside>
 
 <main class="content">
@@ -857,7 +915,7 @@ async function main(): Promise<void> {
 
     if (!sections.length) throw new Error('no sections to render');
 
-    process.stdout.write(buildCombinedHtml(sections, imgs));
+    process.stdout.write(buildCombinedHtml(sections, imgs, readRubric()));
 }
 
 main().catch(err => {
