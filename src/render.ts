@@ -137,47 +137,55 @@ function markdownInline(s: string): string {
 }
 
 function rubricToHtml(md: string): string {
-    const lines = md.split('\n');
-    const tableLines = lines.filter(l => l.trim().startsWith('|'));
-    const dataRows = tableLines.filter(l => !l.replace(/\|/g,'').trim().match(/^[-\s]+$/));
-    if (dataRows.length < 2) return `<pre style="font-size:12px;white-space:pre-wrap">${markdownInline(md)}</pre>`;
-
-    const headers = dataRows[0].split('|').slice(1,-1).map(c => c.trim());
-    const scoreLabels = headers.slice(2);
     const BANDS = [
-        { cls: 'b1', bg: 'rgba(239,68,68,.1)',  border: 'rgba(239,68,68,.3)',  lbl: '#ef4444', txt: '#ef4444' },
-        { cls: 'b2', bg: 'rgba(249,115,22,.1)', border: 'rgba(249,115,22,.3)', lbl: '#f97316', txt: '#f97316' },
-        { cls: 'b3', bg: 'rgba(234,179,8,.1)',  border: 'rgba(234,179,8,.3)',  lbl: '#ca8a04', txt: '#a16207' },
-        { cls: 'b4', bg: 'rgba(8,145,178,.1)',  border: 'rgba(8,145,178,.3)',  lbl: '#0891B2', txt: '#0e7490' },
-        { cls: 'b5', bg: 'rgba(34,197,94,.1)',  border: 'rgba(34,197,94,.3)',  lbl: '#16a34a', txt: '#15803d' },
+        { bg: 'rgba(239,68,68,.1)',  border: 'rgba(239,68,68,.3)',  lbl: '#ef4444', txt: '#ef4444' },
+        { bg: 'rgba(249,115,22,.1)', border: 'rgba(249,115,22,.3)', lbl: '#f97316', txt: '#f97316' },
+        { bg: 'rgba(234,179,8,.1)',  border: 'rgba(234,179,8,.3)',  lbl: '#ca8a04', txt: '#a16207' },
+        { bg: 'rgba(8,145,178,.1)',  border: 'rgba(8,145,178,.3)',  lbl: '#0891B2', txt: '#0e7490' },
+        { bg: 'rgba(34,197,94,.1)',  border: 'rgba(34,197,94,.3)',  lbl: '#16a34a', txt: '#15803d' },
     ];
+    const COLORS = ['#818cf8','#34d399','#f472b6','#fb923c','#60a5fa','#a78bfa','#4ade80'];
 
-    // calibration note
-    const calLine = lines.find(l => l.includes('Score calibration') || l.includes('Most hackathon'));
+    // Parse <details> blocks: each contains <summary> with dimension name + table rows
+    const detailsRe = /<details>[\s\S]*?<summary>([\s\S]*?)<\/summary>([\s\S]*?)<\/details>/g;
+    interface Dim { name: string; sub: string; rows: string[][] }
+    const dims: Dim[] = [];
+    let m: RegExpExecArray | null;
+    while ((m = detailsRe.exec(md)) !== null) {
+        const summaryText = m[1].replace(/<[^>]+>/g, '').trim();
+        const dashIdx = summaryText.indexOf(' — ');
+        const name = dashIdx !== -1 ? summaryText.slice(0, dashIdx).trim() : summaryText;
+        const sub  = dashIdx !== -1 ? summaryText.slice(dashIdx + 3).trim() : '';
+        const body = m[2];
+        const tableRows = body.split('\n')
+            .filter(l => l.trim().startsWith('|') && !l.replace(/\|/g,'').trim().match(/^[-\s]+$/));
+        const dataRows = tableRows.slice(1); // skip header row
+        const rows = dataRows.map(r => r.split('|').slice(1,-1).map(c => c.trim()));
+        if (rows.length) dims.push({ name, sub, rows });
+    }
+
+    if (!dims.length) return `<pre style="font-size:12px;white-space:pre-wrap">${markdownInline(md)}</pre>`;
+
+    const lines = md.split('\n');
+    const calLine = lines.find(l => l.includes('Score calibration') || l.includes('Most hackathon') || l.includes('score 5 ='));
     const calHtml = calLine ? `<div class="rdim-callout">${markdownInline(calLine.trim())}</div>` : '';
 
-    const dimCards = dataRows.slice(1).map((row, ri) => {
-        const cells = row.split('|').slice(1,-1).map(c => c.trim());
-        const name = cells[0].replace(/\*\*/g,'');
-        const sub  = cells[1] ?? '';
-        const bands = cells.slice(2);
-        const idx = ri % 7;
-        const ICONS = ['⬡','⬡','⬡','⬡','⬡','⬡','⬡'];
-        const COLORS = ['#818cf8','#34d399','#f472b6','#fb923c','#60a5fa','#a78bfa','#4ade80'];
-        const bandCards = bands.map((txt, i) => {
+    const dimCards = dims.map((dim, ri) => {
+        const bandCards = dim.rows.map((cells, i) => {
             const b = BANDS[i] ?? BANDS[4];
-            const label = scoreLabels[i] ?? '';
+            const label = cells[0] ?? '';
+            const desc  = cells[1] ?? '';
             return `<div style="background:${b.bg};border:1px solid ${b.border};border-radius:8px;padding:10px 11px;display:flex;flex-direction:column;gap:5px;min-width:0">
   <span style="font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.06em;color:${b.lbl}">${escHtml(label)}</span>
-  <span style="font-size:11.5px;color:${b.txt};line-height:1.45;opacity:.9">${markdownInline(txt)}</span>
+  <span style="font-size:11.5px;color:${b.txt};line-height:1.45;opacity:.9">${markdownInline(desc)}</span>
 </div>`;
         }).join('');
-        return `<div class="rdim" style="--dim-color:${COLORS[idx]}">
+        return `<div class="rdim" style="--dim-color:${COLORS[ri % COLORS.length]}">
   <div class="rdim-head">
     <div class="rdim-num">${ri+1}</div>
     <div>
-      <div class="rdim-name">${escHtml(name)}</div>
-      <div class="rdim-sub">${markdownInline(sub)}</div>
+      <div class="rdim-name">${escHtml(dim.name)}</div>
+      <div class="rdim-sub">${markdownInline(dim.sub)}</div>
     </div>
   </div>
   <div class="rdim-bands">${bandCards}</div>
