@@ -761,7 +761,7 @@ body {
 .rubric-btn::before { content: '⊞'; font-size: 12px; }
 .rubric-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 200; align-items: center; justify-content: center; padding: 24px; }
 .rubric-overlay.open { display: flex; }
-.rubric-modal { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; width: 100%; max-width: 960px; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 24px 64px rgba(0,0,0,.4); }
+.rubric-modal { background: var(--surface); border: 1px solid var(--border); border-top: 3px solid var(--accent); border-radius: 12px; width: 100%; max-width: 980px; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 24px 64px rgba(0,0,0,.5); }
 .rubric-modal-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
 .rubric-modal-title { font-family: var(--font-head); font-size: 16px; font-weight: 700; color: var(--fg); }
 .rubric-close { background: none; border: none; font-size: 20px; color: var(--fg-muted); cursor: pointer; padding: 0 4px; line-height: 1; }
@@ -770,13 +770,29 @@ body {
 .rubric-section-head { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); margin: 20px 0 8px; }
 .rubric-section-head:first-child { margin-top: 0; }
 .rubric-p { font-size: 13px; color: var(--fg-muted); line-height: 1.6; margin: 0 0 8px; }
-.rubric-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-block-end: 16px; }
-.rubric-table th { background: var(--surface-2); color: var(--fg); font-weight: 700; text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--border); white-space: nowrap; font-family: var(--font-head); font-size: 12px; letter-spacing: .03em; }
-.rubric-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--fg-muted); vertical-align: top; line-height: 1.5; }
-.rubric-table tr:last-child td { border-bottom: none; }
-.rubric-table tr:hover td { background: var(--surface-2); }
-.rubric-table td:first-child { font-weight: 700; color: var(--fg); white-space: nowrap; font-family: var(--font-head); }
-.rubric-table th:first-child { width: 140px; }
+.rubric-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; margin-block-end: 16px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.rubric-table th { background: var(--surface-2); color: var(--fg-muted); font-weight: 700; text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--border); font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+.rubric-table th:not(:last-child) { border-right: 1px solid var(--border); }
+.rubric-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; line-height: 1.5; font-size: 12px; }
+.rubric-table td:not(:last-child) { border-right: 1px solid var(--border); }
+.rubric-table tbody tr:last-child td { border-bottom: none; }
+.rubric-table tbody tr:hover td { background: color-mix(in srgb, var(--accent) 4%, transparent); }
+/* col 1: dimension name */
+.rubric-table th:nth-child(1) { width: 130px; }
+.rubric-table td:nth-child(1) { font-weight: 700; color: var(--fg); font-family: var(--font-head); font-size: 13px; white-space: nowrap; }
+/* col 2: what it measures */
+.rubric-table td:nth-child(2) { color: var(--fg-muted); font-style: italic; }
+/* score cols — colored headers + matching text tint */
+.rubric-table th:nth-child(3) { color: #ef4444; background: color-mix(in srgb, #ef4444 12%, var(--surface-2)); }
+.rubric-table th:nth-child(4) { color: #f97316; background: color-mix(in srgb, #f97316 12%, var(--surface-2)); }
+.rubric-table th:nth-child(5) { color: #eab308; background: color-mix(in srgb, #eab308 12%, var(--surface-2)); }
+.rubric-table th:nth-child(6) { color: #0891B2; background: color-mix(in srgb, #0891B2 12%, var(--surface-2)); }
+.rubric-table th:nth-child(7) { color: #22c55e; background: color-mix(in srgb, #22c55e 12%, var(--surface-2)); }
+.rubric-table td:nth-child(3) { color: #ef4444; opacity: .8; }
+.rubric-table td:nth-child(4) { color: #f97316; opacity: .85; }
+.rubric-table td:nth-child(5) { color: #ca8a04; }
+.rubric-table td:nth-child(6) { color: #0891B2; }
+.rubric-table td:nth-child(7) { color: #16a34a; font-weight: 500; }
 @media (max-width: 700px) {
   :root { --sidebar-w: 0px; }
   .sidebar { display: none; }
