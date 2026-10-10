@@ -316,7 +316,7 @@ body {
 .header { background: var(--surface); border: 1px solid var(--border); border-top: 3px solid var(--accent); border-radius: 10px; padding: 24px 28px 20px; margin-block-end: 20px; }
 .event-label { font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); display: inline-block; background: color-mix(in srgb, var(--accent) 12%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent); border-radius: 20px; padding: 3px 12px; margin-block-end: 14px; }
 .project-name { font-family: var(--font-head); font-size: clamp(28px,6vw,46px); font-weight: 800; line-height: 1.1; color: var(--fg); margin: 0 0 6px; }
-.project-sub { font-size: 19px; color: var(--fg); font-weight: 400; font-style: italic; margin: 0 0 16px; line-height: 1.5; padding-left: 14px; border-left: 3px solid var(--accent); opacity: .85; }
+.project-sub { font-size: 20px; color: var(--fg); font-weight: 500; font-style: italic; margin: 0 0 16px; line-height: 1.55; padding: 12px 16px; border-left: 3px solid var(--accent); background: color-mix(in srgb, var(--accent) 7%, transparent); border-radius: 0 6px 6px 0; }
 .meta-table { display: grid; grid-template-columns: auto 1fr; gap: 0; font-size: 15px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
 .meta-row-pair { display: contents; }
 .meta-lbl { font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-dim); white-space: nowrap; padding: 8px 14px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); background: var(--surface); }
