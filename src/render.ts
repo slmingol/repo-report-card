@@ -310,6 +310,7 @@ body {
   padding-block: 32px;
   max-width: 1200px;
   margin: 0 auto;
+  overflow-x: hidden;
 }
 .header { background: var(--surface); border: 1px solid var(--border); border-top: 3px solid var(--accent); border-radius: 10px; padding: 24px 28px 20px; margin-block-end: 20px; }
 .event-label { font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); display: inline-block; background: color-mix(in srgb, var(--accent) 12%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent); border-radius: 20px; padding: 3px 12px; margin-block-end: 14px; }
@@ -841,7 +842,13 @@ body {
 .ov-row-score-denom { font-size: 11px; color: var(--fg-dim); font-weight: 400; font-family: var(--font-mono); }
 .ov-row-bar { width: 100%; height: 4px; background: var(--bar-track); border-radius: 2px; overflow: hidden; }
 .ov-row-bar-fill { height: 100%; border-radius: 2px; background: var(--score); }
-.rubric-btn { margin: 0 14px 12px; padding: 6px 10px; font-size: 10px; font-family: var(--font-mono); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-muted); background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r); cursor: pointer; width: calc(100% - 28px); text-align: left; display: flex; align-items: center; gap: 6px; }
+.grade-legend { margin: 0 14px 10px; padding: 8px 10px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r); }
+.grade-legend-title { font-family: var(--font-mono); font-size: 8.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--fg-dim); margin-block-end: 6px; }
+.grade-legend-rows { display: flex; flex-direction: column; gap: 3px; }
+.grade-legend-row { display: flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10px; }
+.grade-legend-pill { font-weight: 700; font-size: 10px; padding: 1px 6px; border-radius: 4px; line-height: 1.5; flex-shrink: 0; width: 18px; text-align: center; }
+.grade-legend-range { color: var(--fg-dim); }
+.rubric-btn { margin: 0 14px 6px; padding: 6px 10px; font-size: 10px; font-family: var(--font-mono); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-muted); background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r); cursor: pointer; width: calc(100% - 28px); text-align: left; display: flex; align-items: center; gap: 6px; }
 .rubric-btn:hover { border-color: var(--accent); color: var(--accent); }
 .rubric-btn::before { content: '⊞'; font-size: 12px; }
 .rubric-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 200; align-items: center; justify-content: center; padding: 24px; }
@@ -897,8 +904,19 @@ body {
 ${sidebarItems}
   </nav>
   <div class="no-match" id="noMatch">No teams match.</div>
+  <div class="grade-legend">
+    <div class="grade-legend-title">Grade Scale · /70</div>
+    <div class="grade-legend-rows">
+      <div class="grade-legend-row"><span class="grade-legend-pill" style="background:#D1FAE5;color:#059669">A</span><span class="grade-legend-range">62 – 70</span></div>
+      <div class="grade-legend-row"><span class="grade-legend-pill" style="background:#CFFAFE;color:#0891B2">B</span><span class="grade-legend-range">52 – 61</span></div>
+      <div class="grade-legend-row"><span class="grade-legend-pill" style="background:#FEF3C7;color:#D97706">C</span><span class="grade-legend-range">42 – 51</span></div>
+      <div class="grade-legend-row"><span class="grade-legend-pill" style="background:#FFEDD5;color:#EA580C">D</span><span class="grade-legend-range">32 – 41</span></div>
+      <div class="grade-legend-row"><span class="grade-legend-pill" style="background:#FEE2E2;color:#DC2626">F</span><span class="grade-legend-range">&lt; 32</span></div>
+    </div>
+  </div>
   <button class="rubric-btn" onclick="document.getElementById('rubricOverlay').classList.add('open')">Scoring Rubric</button>
-  <button class="rubric-btn" onclick="printActive()" style="margin-block-start:6px">Print / Export</button>
+  <button class="rubric-btn" onclick="printActive()">Print Active Team</button>
+  <button class="rubric-btn" onclick="window.print()" style="margin-block-end:14px">Print All Teams</button>
 </aside>
 
 <div class="rubric-overlay" id="rubricOverlay" onclick="if(event.target===this)this.classList.remove('open')">
@@ -983,7 +1001,7 @@ function applySearch(raw) {
   let shown = 0;
   items.forEach(item => {
     const match = !q || item.dataset.name?.includes(q);
-    item.style.display = match ? '' : 'none';
+    item.closest('.team-item-wrap').style.display = match ? '' : 'none';
     if (match) shown++;
   });
   document.querySelectorAll('.ov-card, .ov-row').forEach(card => {
