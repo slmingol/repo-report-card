@@ -756,19 +756,27 @@ body {
 .ov-stat-num { font-family: var(--font-head); font-size: 15px; font-weight: 800; color: var(--fg); font-variant-numeric: tabular-nums; line-height: 1.2; }
 .ov-stat-lbl { font-size: 9px; color: var(--fg-dim); text-transform: uppercase; letter-spacing: .06em; font-weight: 500; margin-block-start: 1px; }
 .ov-tldr { font-size: 12px; color: var(--fg-muted); font-style: italic; line-height: 1.5; margin: 0; }
-.rubric-details { border-top: 1px solid var(--border); flex-shrink: 0; overflow: hidden; }
-.rubric-summary { padding: 10px 14px; font-size: 10px; font-family: var(--font-mono); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-muted); cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px; user-select: none; }
-.rubric-summary::-webkit-details-marker { display: none; }
-.rubric-summary::before { content: '▶'; font-size: 7px; color: var(--accent); transition: transform .15s; flex-shrink: 0; }
-.rubric-details[open] .rubric-summary::before { transform: rotate(90deg); }
-.rubric-body { padding: 0 12px 14px; overflow-y: auto; max-height: 55vh; }
-.rubric-section-head { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); margin: 14px 0 6px; }
-.rubric-p { font-size: 10px; color: var(--fg-muted); line-height: 1.5; margin: 0 0 6px; }
-.rubric-table { width: 100%; border-collapse: collapse; font-size: 9.5px; margin-block-end: 10px; }
-.rubric-table th { background: var(--surface-2); color: var(--fg-dim); font-weight: 700; text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--border); white-space: nowrap; }
-.rubric-table td { padding: 4px 6px; border-bottom: 1px solid var(--border); color: var(--fg-muted); vertical-align: top; line-height: 1.4; }
+.rubric-btn { margin: 0 14px 12px; padding: 6px 10px; font-size: 10px; font-family: var(--font-mono); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-muted); background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r); cursor: pointer; width: calc(100% - 28px); text-align: left; display: flex; align-items: center; gap: 6px; }
+.rubric-btn:hover { border-color: var(--accent); color: var(--accent); }
+.rubric-btn::before { content: '⊞'; font-size: 12px; }
+.rubric-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 200; align-items: center; justify-content: center; padding: 24px; }
+.rubric-overlay.open { display: flex; }
+.rubric-modal { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; width: 100%; max-width: 960px; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 24px 64px rgba(0,0,0,.4); }
+.rubric-modal-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.rubric-modal-title { font-family: var(--font-head); font-size: 16px; font-weight: 700; color: var(--fg); }
+.rubric-close { background: none; border: none; font-size: 20px; color: var(--fg-muted); cursor: pointer; padding: 0 4px; line-height: 1; }
+.rubric-close:hover { color: var(--fg); }
+.rubric-body { padding: 20px 24px; overflow-y: auto; }
+.rubric-section-head { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); margin: 20px 0 8px; }
+.rubric-section-head:first-child { margin-top: 0; }
+.rubric-p { font-size: 13px; color: var(--fg-muted); line-height: 1.6; margin: 0 0 8px; }
+.rubric-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-block-end: 16px; }
+.rubric-table th { background: var(--surface-2); color: var(--fg); font-weight: 700; text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--border); white-space: nowrap; font-family: var(--font-head); font-size: 12px; letter-spacing: .03em; }
+.rubric-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--fg-muted); vertical-align: top; line-height: 1.5; }
 .rubric-table tr:last-child td { border-bottom: none; }
-.rubric-table td:first-child, .rubric-table th:first-child { white-space: nowrap; font-weight: 600; color: var(--fg); }
+.rubric-table tr:hover td { background: var(--surface-2); }
+.rubric-table td:first-child { font-weight: 700; color: var(--fg); white-space: nowrap; font-family: var(--font-head); }
+.rubric-table th:first-child { width: 140px; }
 @media (max-width: 700px) {
   :root { --sidebar-w: 0px; }
   .sidebar { display: none; }
@@ -793,11 +801,18 @@ body {
 ${sidebarItems}
   </nav>
   <div class="no-match" id="noMatch">No teams match.</div>
-  <details class="rubric-details">
-    <summary class="rubric-summary">Scoring Rubric</summary>
-    <div class="rubric-body">${rubricToHtml(rubric)}</div>
-  </details>
+  <button class="rubric-btn" onclick="document.getElementById('rubricOverlay').classList.add('open')">Scoring Rubric</button>
 </aside>
+
+<div class="rubric-overlay" id="rubricOverlay" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="rubric-modal">
+    <div class="rubric-modal-head">
+      <span class="rubric-modal-title">Technical Complexity Rubric</span>
+      <button class="rubric-close" onclick="document.getElementById('rubricOverlay').classList.remove('open')">&times;</button>
+    </div>
+    <div class="rubric-body">${rubricToHtml(rubric)}</div>
+  </div>
+</div>
 
 <main class="content">
 <div id="overviewPanel" class="overview-panel" style="display:none">
