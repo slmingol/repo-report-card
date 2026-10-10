@@ -818,7 +818,10 @@ async function main(): Promise<void> {
         if (input.endsWith('.json')) {
             if (!fs.existsSync(input)) throw new Error(`file not found: ${input}`);
             const raw = fs.readFileSync(input, 'utf-8');
-            const data: ScoreData = JSON.parse(raw);
+            const start = raw.indexOf('{');
+            const end = raw.lastIndexOf('}');
+            if (start === -1 || end === -1) throw new Error(`no JSON object found in ${input}`);
+            const data: ScoreData = JSON.parse(raw.slice(start, end + 1));
             const sec = fromJson(data, idx, imgs);
             sections.push(sec);
         } else if (input.endsWith('.html') || input.endsWith('.htm')) {
