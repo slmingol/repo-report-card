@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { CliError, cloneRepo, commitStats, ensureGh, makeTempDir, parseRepo, removeDir, repoView } from './gh';
+import { CliError, cloneRepo, commitStats, ensureGh, makeTempDir, parseRepo, removeDir, repoContributors, repoView } from './gh';
 import { summarize, walk } from './inventory';
 import { selectSamples } from './select';
 import { extractSignals } from './signals';
@@ -72,7 +72,7 @@ async function main(): Promise<void> {
 
     await ensureGh();
     log(`fetching metadata for ${ref.owner}/${ref.repo}`);
-    const metadata = await repoView(ref);
+    const [metadata, contributors] = await Promise.all([repoView(ref), repoContributors(ref)]);
 
     let dir: string | undefined;
     const cleanup = () => dir && removeDir(dir);
@@ -97,6 +97,7 @@ async function main(): Promise<void> {
 
         const dossier = {
             metadata,
+            contributors,
             activity,
             inventory: summarize(walked),
             signals,
