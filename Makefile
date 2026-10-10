@@ -91,6 +91,11 @@ score-all: check $(REPOS_FILE)
 	n=0; \
 	_score() { \
 	  repo="$$1"; rubric="$$2"; since_arg="$$3"; budget="$$4"; \
+	  slug=$$(echo "$$repo" | sed 's|.*/||'); \
+	  outfile="$$slug-scorecard.html"; \
+	  if [ -f "$$outfile" ]; then \
+	    printf "$(D)skip$(R) $$repo  $(D)($$outfile exists)$(R)\n"; return; \
+	  fi; \
 	  printf "$(CY)▶$(R) $(B)$$repo$(R)\n"; \
 	  principal-skinner "$$repo" $$since_arg --budget "$$budget" \
 	    | claude -p "$$(cat $$rubric)" 2>/dev/null \
