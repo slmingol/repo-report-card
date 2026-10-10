@@ -111,74 +111,25 @@ skinner-render *-score.json > results.html
 
 ### UI tour
 
-**Sidebar** — persistent left panel
+**Detail view** — scorecard with Skinner opening quip, GitHub contributor avatars, stat counters, and dimension breakdown
 
-```
-┌──────────────────────────────┐
-│  Repo Report Card      ☀/🌙 │  ← light/dark toggle
-│  ┌────────────────────────┐  │
-│  │ 🔍  Search teams...    │  │  ← live search (filters sidebar + overview)
-│  └────────────────────────┘  │
-│  [ Detail ] [ Overview ]     │  ← view toggle
-│  ──────────────────────────  │
-│  A  58  Acme Hack Alpha  ↗  │  ← grade pill · score · name · open-in-tab
-│  B  52  Beta Builders    ↗  │
-│  C  44  Gamma Squad      ↗  │
-│  ──────────────────────────  │
-│  GRADE SCALE · /70           │
-│  [A] 62–70   [B] 52–61      │  ← grade legend
-│  [C] 42–51   [D] 32–41      │
-│  [F]  < 32                   │
-│  ──────────────────────────  │
-│  [⊞ SCORING RUBRIC       ]   │
-│  [⊞ PRINT ACTIVE TEAM    ]   │  ← opens scorecard in new tab → print dialog
-│  [⊞ PRINT ALL TEAMS      ]   │  ← serialises all teams → print / Save as PDF
-└──────────────────────────────┘
-```
+![Detail view](media/screenshots/01-detail-view.png)
 
-**Overview — grid card**
+**Dimension breakdown** — per-dimension bars, evidence, per-dimension Skinner quip
 
-```
-┌─────────────────────────────────────────┐
-│  A              Acme Hack Alpha     ↗  │  ← grade · name · open-in-tab
-│                 58 / 70                 │  ← total score
-│  ─────────────────────────────────────  │
-│  COMMITS  FILES  CONTRIB  BYTES  TESTS  │  ← stat chips
-│    143      316      4    1.2MB   60+   │
-│  ─────────────────────────────────────  │
-│  An AI agent platform that automates    │  ← TLDR (beside chips on wide screens)
-│  SWI self-service IT processes via Jira │
-└─────────────────────────────────────────┘
-```
+![Dimension breakdown](media/screenshots/05-detail-dims.png)
 
-**Detail view — scorecard** (rendered inside iframe, CSS-isolated)
+**Overview — grid** — all teams at a glance: grade, score, stat chips, TLDR
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  ACME HACKATHON 2026 · OCT                                  │  ← event badge
-│                                                             │
-│  Acme Hack Alpha                                            │  ← project name
-│  An AI agent platform that automates SWI self-service...   │  ← description
-│  ─────────────────────────────────────────────────────────  │
-│  TEAM     [avatar] alice  [avatar] bob  [avatar] carol      │  ← GitHub avatars
-│  DATES    2026-10-08 – 2026-10-10                           │
-│  HOURS    ~18 hours                                         │
-│  SCORE    58 / 70  ·  Grade B                               │
-│  ─────────────────────────────────────────────────────────  │
-│  "Well, Superintendent, I suppose one must acknowledge..."  │  ← Skinner quip
-│  ─────────────────────────────────────────────────────────  │
-│  Architecture          7 / 10  ████████░░  ← score bar     │
-│  Code structure, layering, and separation of concerns       │
-│  src/agent/, src/api/ cleanly separated; no circular deps  │  ← evidence
-│  "Adequately compartmentalised, if not exactly visionary." │  ← per-dim quip
-│                                                             │
-│  Integrations          8 / 10  █████████░                   │
-│  Engineering Rigor     5 / 10  ██████░░░░                   │
-│  …                                                          │
-│  ─────────────────────────────────────────────────────────  │
-│  "A B, then. Not the B of promise — the B of adequacy."    │  ← closing quip
-└─────────────────────────────────────────────────────────────┘
-```
+![Overview grid](media/screenshots/02-overview-grid.png)
+
+**Overview — list** — compact ranked list with stat chips and TLDR inline
+
+![Overview list](media/screenshots/03-overview-list.png)
+
+**Sidebar** — team list with grade pills, grade legend, search, print buttons
+
+![Sidebar](media/screenshots/04-sidebar.png)
 
 ---
 
