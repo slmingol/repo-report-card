@@ -173,6 +173,85 @@ make full SINCE=2026-10-08 EVENT="Acme Hackathon 2026" OUT=results.html JOBS=4
 
 `repos.txt` — one `owner/repo` per line, `#` lines are comments.
 
+### Example runs
+
+**`make check` — verify prerequisites**
+```
+$ make check
+  ✓  principal-skinner
+  ✓  skinner-render
+  ✓  claude
+  ✓  gh
+  ✓  git
+```
+
+**`make score` — score a single repo**
+```
+$ make score REPO=acme/hack-temporal SINCE=2026-10-08
+
+▶ acme/hack-temporal  since 2026-10-08
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  collecting dossier...
+  scoring with Claude...
+  ✓ acme-hack-temporal-score.json  (64/70 · A)
+```
+
+**`make score-all` — score all repos in parallel**
+```
+$ make score-all SINCE=2026-10-08 EVENT="Acme Hackathon 2026" JOBS=3
+
+Scoring 3 repos  since 2026-10-08  jobs=3
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✓ acme-hack-temporal-score.json     (64/70 · A)
+  ✓ acme-hack-conduit-score.json      (54/70 · B)
+  ✓ acme-hack-vaultkeeper-score.json  (46/70 · C)
+```
+
+**`make render` — stitch existing score files into HTML**
+```
+$ make render OUT=results.html
+
+▶ Stitching 3 score files  →  results.html
+✓ results.html  (148K)
+```
+
+**`make full` — score all + render in one shot**
+```
+$ make full SINCE=2026-10-08 EVENT="Acme Hackathon 2026" OUT=results.html JOBS=3
+
+Scoring 3 repos  since 2026-10-08  jobs=3
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✓ acme-hack-temporal-score.json     (64/70 · A)
+  ✓ acme-hack-conduit-score.json      (54/70 · B)
+  ✓ acme-hack-vaultkeeper-score.json  (46/70 · C)
+
+▶ Stitching 3 score files  →  results.html
+✓ results.html  (148K)
+
+Pipeline complete.  Run make open to view.
+```
+
+**`make list` — see what's already scored**
+```
+$ make list
+
+Score files  (3 files)
+──────────────────────────────────────────────
+  ✓  acme-hack-temporal-score.json              7.2K
+  ✓  acme-hack-conduit-score.json               6.9K
+  ✓  acme-hack-vaultkeeper-score.json           6.8K
+```
+
+**`make clean` / `make clean-all`**
+```
+$ make clean
+→ Removing 3 score file(s)
+
+$ make clean-all OUT=results.html
+→ Removing 3 score file(s)
+→ Removing results.html
+```
+
 <details>
 <summary>Common workflow examples</summary>
 
