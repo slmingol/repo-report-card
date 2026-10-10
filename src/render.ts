@@ -259,9 +259,12 @@ body {
 .event-label { font-family: var(--font-mono); font-size: 15px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); display: block; margin-block-end: 8px; }
 .project-name { font-family: var(--font-head); font-size: clamp(22px,5vw,32px); font-weight: 800; line-height: 1.15; color: var(--fg); margin: 0 0 4px; }
 .project-sub { font-size: 18px; color: var(--fg-muted); font-weight: 300; font-style: italic; margin: 0 0 12px; }
-.meta-row { display: flex; flex-wrap: wrap; gap: 10px 20px; font-size: 19px; color: var(--fg-muted); }
-.meta-row span::before { content: "· "; }
-.meta-row span:first-child::before { content: ""; }
+.meta-table { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; font-size: 16px; margin-block-start: 10px; }
+.meta-lbl { font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--fg-dim); white-space: nowrap; padding-block-start: 2px; }
+.meta-val { color: var(--fg-muted); line-height: 1.5; }
+.meta-val a { color: var(--accent); text-decoration: none; }
+.meta-val a:hover { text-decoration: underline; }
+.meta-tag { display: inline-block; font-family: var(--font-mono); font-size: 11px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; color: var(--fg-dim); margin-inline-start: 6px; vertical-align: middle; }
 .quip { background: var(--quip-bg); border: 1px solid var(--quip-bdr); border-left: 3px solid var(--quip); border-radius: var(--r); padding: 16px; margin-block-end: 20px; display: flex; align-items: center; gap: 20px; }
 .quip-right { flex: 1; display: flex; flex-direction: column; gap: 8px; justify-content: center; }
 .quip-label { font-family: var(--font-mono); font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--quip); white-space: nowrap; }
@@ -330,7 +333,7 @@ function quipBlock(text: string, imgSrc: string): string {
 }
 
 function renderScorecardHtml(data: ScoreData, imgs: string[]): string {
-    const contribs = (data.contributors ?? []).join(' · ');
+    const repoUrl = `https://github.com/${data.repo}`;
     const pillClass = (s: number) => s === 5 ? 'max' : 'near';
     const barBg = (s: number) => s === 5 ? 'var(--max)' : 'var(--score)';
     const barW = (s: number) => `${(s / 5) * 100}%`;
@@ -387,10 +390,10 @@ function renderScorecardHtml(data: ScoreData, imgs: string[]): string {
   <span class="event-label">${escHtml(data.event)}</span>
   <h1 class="project-name">${escHtml(data.project_name)}</h1>
   <p class="project-sub">${escHtml(data.description)}</p>
-  <div class="meta-row">
-    ${contribs ? `<span>${escHtml(contribs)}</span>` : ''}
-    <span>${escHtml(data.dates)} · ${escHtml(data.hours)}</span>
-    <span>${escHtml(data.repo)} · private</span>
+  <div class="meta-table">
+    ${(data.contributors ?? []).length ? `<span class="meta-lbl">Team</span><span class="meta-val">${escHtml((data.contributors ?? []).join(' · '))}</span>` : ''}
+    <span class="meta-lbl">Window</span><span class="meta-val">${escHtml(data.dates)} &nbsp;·&nbsp; ${escHtml(data.hours)}</span>
+    <span class="meta-lbl">Repo</span><span class="meta-val"><a href="${escHtml(repoUrl)}" target="_blank" rel="noopener">${escHtml(data.repo)}</a><span class="meta-tag">${data.signals?.is_fork ? 'fork' : 'private'}</span></span>
   </div>
 </header>
 
