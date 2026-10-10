@@ -608,6 +608,23 @@ ${quipBlock(data.closing_quip, pickImg(imgs))}
     dot.addEventListener('mouseleave', function() { tip.classList.remove('show'); });
   });
 })();
+function _rrcSendHeight() {
+  var h = Math.max(document.documentElement.scrollHeight, document.body ? document.body.scrollHeight : 0);
+  if (h > 200) try { window.parent.postMessage({ type: 'rrc-height', height: h, title: document.title }, '*'); } catch(e) {}
+}
+function _rrcSchedule() {
+  requestAnimationFrame(function() {
+    _rrcSendHeight();
+    setTimeout(_rrcSendHeight, 500);
+    setTimeout(_rrcSendHeight, 1500);
+  });
+}
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(_rrcSchedule);
+} else {
+  _rrcSchedule();
+}
+window.addEventListener('load', _rrcSchedule);
 </script>
 </body>
 </html>`;
@@ -1082,18 +1099,44 @@ ${contentSections}
 <script>
 function resizeFrame(f) {
   try {
-    var h = f.contentDocument.documentElement.scrollHeight;
+    var d = f.contentDocument;
+    var h = Math.max(d.documentElement.scrollHeight, d.body ? d.body.scrollHeight : 0);
     if (h > 200) f.style.height = h + 'px';
   } catch(e) {}
 }
-document.querySelectorAll('.scorecard-frame').forEach(function(f) {
-  f.addEventListener('load', function() {
-    resizeFrame(this);
-    var self = this;
-    setTimeout(function() { resizeFrame(self); }, 800);
+// Poll until all frames have a stable measured height (handles srcdoc render timing).
+(function() {
+  var attempts = 0;
+  var frames = Array.from(document.querySelectorAll('.scorecard-frame'));
+  function tick() {
+    var allSet = true;
+    frames.forEach(function(f) {
+      try {
+        var d = f.contentDocument;
+        var h = Math.max(d.documentElement.scrollHeight, d.body ? d.body.scrollHeight : 0);
+        if (h > 200) { f.style.height = h + 'px'; }
+        else { allSet = false; }
+      } catch(e) { allSet = false; }
+    });
+    attempts++;
+    if (!allSet && attempts < 40) setTimeout(tick, 100);
+  }
+  tick();
+  // Also fire on iframe load and outer page load as belt-and-suspenders.
+  frames.forEach(function(f) { f.addEventListener('load', function() { resizeFrame(this); }); });
+  window.addEventListener('load', function() { frames.forEach(function(f) { resizeFrame(f); }); });
+  // postMessage from inside iframe after fonts.ready + requestAnimationFrame
+  window.addEventListener('message', function(e) {
+    if (!e.data || e.data.type !== 'rrc-height' || !(e.data.height > 200)) return;
+    frames.forEach(function(f) {
+      try {
+        var match = (f.contentWindow === e.source) ||
+                    (e.data.title && f.contentDocument && f.contentDocument.title === e.data.title);
+        if (match) f.style.height = e.data.height + 'px';
+      } catch(x) {}
+    });
   });
-  if (f.contentDocument && f.contentDocument.readyState === 'complete') resizeFrame(f);
-});
+})();
 
 var currentView = 'detail';
 function setView(v) {
