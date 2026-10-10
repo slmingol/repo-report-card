@@ -129,10 +129,10 @@ function parseArgs(argv: string[]): Args {
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
 function gradeFromScore(n: number): string {
-    if (n >= 22) return 'A';
-    if (n >= 18) return 'B';
-    if (n >= 14) return 'C';
-    if (n >= 10) return 'D';
+    if (n >= 62) return 'A';
+    if (n >= 52) return 'B';
+    if (n >= 42) return 'C';
+    if (n >= 32) return 'D';
     return 'F';
 }
 
@@ -317,6 +317,7 @@ footer { border-top: 1px solid var(--border); padding-block-start: 16px; display
 const DIM_ABBR: Record<string, string> = {
     'Architecture': 'Arch', 'Integrations': 'Intg', 'Problem Difficulty': 'Prob',
     'Scope Delivered': 'Scop', 'Engineering Rigor': 'Rigor',
+    'Innovation': 'Innov', 'Operational Readiness': 'Ops',
 };
 
 function quipBlock(text: string, imgSrc: string): string {
@@ -334,10 +335,10 @@ function quipBlock(text: string, imgSrc: string): string {
 
 function renderScorecardHtml(data: ScoreData, imgs: string[]): string {
     const repoUrl = `https://github.com/${data.repo}`;
-    const pillClass = (s: number) => s === 5 ? 'max' : 'near';
-    const barBg = (s: number) => s === 5 ? 'var(--max)' : 'var(--score)';
-    const barW = (s: number) => `${(s / 5) * 100}%`;
-    const fillClass = (s: number) => s === 5 ? 'mini-bar-fill' : 'mini-bar-fill partial';
+    const pillClass = (s: number) => s === 10 ? 'max' : 'near';
+    const barBg = (s: number) => s === 10 ? 'var(--max)' : 'var(--score)';
+    const barW = (s: number) => `${(s / 10) * 100}%`;
+    const fillClass = (s: number) => s === 10 ? 'mini-bar-fill' : 'mini-bar-fill partial';
 
     const miniBars = (data.dimensions ?? []).map(d => `
       <div class="mini-bar-row">
@@ -350,7 +351,7 @@ function renderScorecardHtml(data: ScoreData, imgs: string[]): string {
   <div class="dim-card">
     <div class="dim-top">
       <div class="dim-name">${escHtml(d.name)}<small>${escHtml(d.subtitle)}</small></div>
-      <span class="score-pill ${pillClass(d.score)}">${d.score} / 5</span>
+      <span class="score-pill ${pillClass(d.score)}">${d.score} / 10</span>
     </div>
     <div class="score-bar-track">
       <div class="score-bar-fill" style="width:${barW(d.score)};background:${barBg(d.score)}"></div>
@@ -410,7 +411,7 @@ ${quipBlock(data.opening_quip, pickImg(imgs))}
 <div class="score-hero">
   <div class="total-score">
     <span class="big">${data.total_score}</span>
-    <span class="denom">/ 25</span>
+    <span class="denom">/ 70</span>
   </div>
   <div class="score-divider"></div>
   <div class="score-breakdown">
@@ -477,7 +478,7 @@ function extractSection(html: string, idx: number): Section {
     const scoreMatch =
         html.match(/<span[^>]*class="big"[^>]*>(\d+)<\/span>/i) ||
         html.match(/<span[^>]*class="num"[^>]*>(\d+)<\/span>/i) ||
-        html.match(/>\s*(\d+)\s*<[^>]*>\s*\/\s*25/);
+        html.match(/>\s*(\d+)\s*<[^>]*>\s*\/\s*(?:25|70)/);
     const score = scoreMatch ? parseInt(scoreMatch[1]) : 0;
 
     const quipMatch = html.match(/<span[^>]*class="quip-text"[^>]*>([\s\S]*?)<\/span>/i);
@@ -565,7 +566,7 @@ function buildCombinedHtml(sections: Section[], skinnerImgs: string[]): string {
   <span class="team-name">${escHtml(s.name)}</span>
   <span class="team-badges">
     <span class="grade-pill" style="background:${bg};color:${color}">${s.grade}</span>
-    <span class="score-num">${s.score}<span class="denom">/25</span></span>
+    <span class="score-num">${s.score}<span class="denom">/70</span></span>
   </span>
 </a>`;
     }).join('\n');
@@ -595,7 +596,7 @@ function buildCombinedHtml(sections: Section[], skinnerImgs: string[]): string {
         return `<a class="ov-card" href="#${s.slug}" data-name="${s.name.toLowerCase()}">
   <div class="ov-card-head">
     <span class="ov-name">${escHtml(s.name)}</span>
-    <span class="ov-grade" style="background:${bg};color:${color}">${s.grade} · ${s.score}/25</span>
+    <span class="ov-grade" style="background:${bg};color:${color}">${s.grade} · ${s.score}/70</span>
   </div>
   <div class="ov-stats">${statsHtml}</div>
   ${tldr}
