@@ -1087,7 +1087,11 @@ function resizeFrame(f) {
   } catch(e) {}
 }
 document.querySelectorAll('.scorecard-frame').forEach(function(f) {
-  f.addEventListener('load', function() { resizeFrame(this); });
+  f.addEventListener('load', function() {
+    resizeFrame(this);
+    var self = this;
+    setTimeout(function() { resizeFrame(self); }, 800);
+  });
   if (f.contentDocument && f.contentDocument.readyState === 'complete') resizeFrame(f);
 });
 
@@ -1291,10 +1295,16 @@ function exportCsv() {
   }
 })();
 document.querySelectorAll('.team-item').forEach(function(a) {
-  a.addEventListener('click', function() {
+  a.addEventListener('click', function(e) {
     var href = a.getAttribute('href');
     if (href && href.startsWith('#')) {
-      try { history.replaceState(null, '', '?team=' + href.slice(1) + window.location.hash); } catch(e) {}
+      try { history.replaceState(null, '', '?team=' + href.slice(1)); } catch(e) {}
+      if (currentView !== 'detail') {
+        e.preventDefault();
+        setView('detail');
+        var target = document.querySelector(href);
+        if (target) setTimeout(function() { target.scrollIntoView({ behavior: 'smooth' }); }, 50);
+      }
     }
   });
 });
