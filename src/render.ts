@@ -608,15 +608,24 @@ ${quipBlock(data.closing_quip, pickImg(imgs))}
     dot.addEventListener('mouseleave', function() { tip.classList.remove('show'); });
   });
 })();
-function _rrcSendHeight() {
+function _rrcApplyHeight() {
   var h = Math.max(document.documentElement.scrollHeight, document.body ? document.body.scrollHeight : 0);
-  if (h > 200) try { window.parent.postMessage({ type: 'rrc-height', height: h, title: document.title }, '*'); } catch(e) {}
+  if (!(h > 200)) return;
+  try {
+    // srcdoc is same-origin: directly set height on the matching parent frame
+    var fs = window.parent.document.querySelectorAll('.scorecard-frame');
+    for (var i = 0; i < fs.length; i++) {
+      if (fs[i].contentDocument === document) { fs[i].style.height = h + 'px'; break; }
+    }
+  } catch(e) {
+    try { window.parent.postMessage({ type: 'rrc-height', height: h, title: document.title }, '*'); } catch(e2) {}
+  }
 }
 function _rrcSchedule() {
   requestAnimationFrame(function() {
-    _rrcSendHeight();
-    setTimeout(_rrcSendHeight, 500);
-    setTimeout(_rrcSendHeight, 1500);
+    _rrcApplyHeight();
+    setTimeout(_rrcApplyHeight, 500);
+    setTimeout(_rrcApplyHeight, 1500);
   });
 }
 if (document.fonts && document.fonts.ready) {
