@@ -117,6 +117,15 @@ export async function repoView(ref: RepoRef): Promise<RepoMetadata> {
     };
 }
 
+export async function repoContributors(ref: RepoRef): Promise<string[]> {
+    try {
+        const raw = await run('gh', ['api', `repos/${repoSpec(ref)}/contributors`, '--paginate', '--jq', '.[].login'], { timeoutMs: 30_000 });
+        return raw.trim().split('\n').filter(Boolean);
+    } catch {
+        return [];
+    }
+}
+
 export function makeTempDir(): string {
     return fs.mkdtempSync(path.join(os.tmpdir(), 'principal-skinner-'));
 }

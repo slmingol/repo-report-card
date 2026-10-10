@@ -40,7 +40,7 @@ Output exactly this shape. All string values are plain text — no HTML, no mark
   "event": "Event Name · Year",
   "project_name": "Project display name",
   "description": "One-line project description",
-  "contributors": ["Name 1", "Name 2"],
+  "contributors": ["username1", "username2"],
   "dates": "YYYY-MM-DD – YYYY-MM-DD",
   "hours": "~N hours",
   "total_score": 24,
@@ -75,6 +75,7 @@ Output exactly this shape. All string values are plain text — no HTML, no mark
 ```
 
 Rules:
+- `contributors`: use the `contributors` array from the dossier (GitHub usernames). Do not guess or invent names.
 - `dimensions` must have exactly 5 entries in this order: Architecture, Integrations,
   Problem Difficulty, Scope Delivered, Engineering Rigor.
 - `total_score` must equal the sum of all dimension scores.
