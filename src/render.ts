@@ -340,25 +340,25 @@ body {
 .score-divider { width: 1px; height: 52px; background: var(--border); flex-shrink: 0; }
 .score-breakdown { flex: 1; min-width: 180px; }
 .score-breakdown .label { font-family: var(--font-head); font-size: 15px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--fg-muted); margin-block-end: 10px; }
-.mini-bars { display: flex; flex-direction: column; gap: 5px; }
-.mini-bar-row { display: flex; align-items: center; gap: 8px; font-size: 16px; }
-.mini-bar-row .dim-abbr { font-family: var(--font-mono); font-size: 10px; width: 30px; flex-shrink: 0; text-transform: uppercase; letter-spacing: .05em; color: var(--fg-muted); }
-.mini-bar-track { flex: 1; height: 5px; border-radius: 3px; background: var(--bar-track); overflow: hidden; }
-.mini-bar-fill { height: 100%; border-radius: 3px; background: var(--max); }
+.mini-bars { display: flex; flex-direction: column; gap: 7px; }
+.mini-bar-row { display: flex; align-items: center; gap: 10px; }
+.mini-bar-row .dim-abbr { font-family: var(--font-mono); font-size: 11.5px; width: 140px; flex-shrink: 0; letter-spacing: .04em; color: var(--fg-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mini-bar-track { flex: 1; height: 8px; border-radius: 4px; background: var(--bar-track); overflow: hidden; }
+.mini-bar-fill { height: 100%; border-radius: 4px; background: var(--max); }
 .mini-bar-fill.partial { background: var(--score); }
-.mini-bar-row .sc { font-family: var(--font-mono); font-size: 10px; width: 16px; text-align: right; font-variant-numeric: tabular-nums; color: var(--fg); }
+.mini-bar-row .sc { font-family: var(--font-head); font-size: 13px; font-weight: 700; width: 22px; text-align: right; font-variant-numeric: tabular-nums; color: var(--fg); }
 .section-head { font-family: var(--font-head); font-size: 15px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--fg-muted); margin: 0 0 12px; }
 .dimensions { display: flex; flex-direction: column; gap: 12px; margin-block-end: 20px; }
-.dim-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 16px 18px; }
-.dim-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-block-end: 10px; flex-wrap: wrap; }
-.dim-name { font-family: var(--font-head); font-size: 19px; font-weight: 700; color: var(--fg); flex: 1; min-width: 0; }
-.dim-name small { display: block; font-family: var(--font-body); font-size: 16px; font-weight: 300; color: var(--fg-muted); margin-block-start: 1px; }
-.score-pill { font-family: var(--font-mono); font-size: 19px; font-weight: 600; padding: 3px 10px; border-radius: 20px; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.dim-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 20px 22px; }
+.dim-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-block-end: 12px; flex-wrap: wrap; }
+.dim-name { font-family: var(--font-head); font-size: 21px; font-weight: 700; color: var(--fg); flex: 1; min-width: 0; }
+.dim-sub { font-family: var(--font-body); font-size: 15px; font-weight: 400; font-style: italic; color: color-mix(in srgb, var(--accent) 55%, var(--fg-muted)); margin-block-start: 4px; line-height: 1.4; }
+.score-pill { font-family: var(--font-mono); font-size: 20px; font-weight: 700; padding: 4px 13px; border-radius: 20px; flex-shrink: 0; font-variant-numeric: tabular-nums; }
 .score-pill.max  { background: var(--max-bg);   color: var(--max); }
 .score-pill.near { background: var(--score-bg); color: var(--score); }
-.score-bar-track { height: 5px; border-radius: 3px; background: var(--bar-track); overflow: hidden; margin-block-end: 12px; }
-.score-bar-fill { height: 100%; border-radius: 3px; }
-.evidence { font-size: 19px; color: var(--fg-muted); font-weight: 300; line-height: 1.55; margin-block-end: 10px; }
+.score-bar-track { height: 7px; border-radius: 4px; background: var(--bar-track); overflow: hidden; margin-block-end: 16px; }
+.score-bar-fill { height: 100%; border-radius: 4px; }
+.evidence { font-size: 19px; color: var(--fg-muted); font-weight: 400; line-height: 1.65; margin-block-end: 10px; }
 .evidence code { font-family: var(--font-mono); font-size: 15px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; color: var(--accent); white-space: nowrap; }
 .callout { display: flex; gap: 12px; background: var(--warn-bg); border: 1px solid var(--border); border-left: 3px solid var(--warn); border-radius: var(--r); padding: 14px 16px; margin-block-end: 20px; }
 .callout-body { font-size: 19px; color: var(--fg-muted); font-weight: 300; line-height: 1.55; }
@@ -400,7 +400,7 @@ function renderScorecardHtml(data: ScoreData, imgs: string[]): string {
 
     const miniBars = (data.dimensions ?? []).map(d => `
       <div class="mini-bar-row">
-        <span class="dim-abbr">${escHtml(DIM_ABBR[d.name] ?? d.name.slice(0, 4))}</span>
+        <span class="dim-abbr">${escHtml(d.name)}</span>
         <div class="mini-bar-track"><div class="${fillClass(d.score)}" style="width:${barW(d.score)}"></div></div>
         <span class="sc">${d.score}</span>
       </div>`).join('');
@@ -408,7 +408,7 @@ function renderScorecardHtml(data: ScoreData, imgs: string[]): string {
     const dimCards = (data.dimensions ?? []).map(d => `
   <div class="dim-card">
     <div class="dim-top">
-      <div class="dim-name">${escHtml(d.name)}<small>${escHtml(d.subtitle)}</small></div>
+      <div class="dim-name">${escHtml(d.name)}<div class="dim-sub">${escHtml(d.subtitle)}</div></div>
       <span class="score-pill ${pillClass(d.score)}">${d.score} / 10</span>
     </div>
     <div class="score-bar-track">
