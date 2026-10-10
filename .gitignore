@@ -5,4 +5,8 @@ out/
 *.log
 .vscode/
 *.zip
-vibe-scorecard.html
+# output artifacts
+*-score.json
+*-scorecard.html
+results.html
+repos.txt
