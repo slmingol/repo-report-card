@@ -675,7 +675,7 @@ function buildCombinedHtml(sections: Section[], skinnerImgs: string[], rubric: s
         const tldrShort = s.tldr ? escHtml(s.tldr.slice(0, 120)) + (s.tldr.length > 120 ? '…' : '') : '';
         return `<a class="ov-row" href="#${s.slug}" data-name="${s.name.toLowerCase()}">
   <span class="ov-rank">${i + 1}</span>
-  <span class="ov-row-grade" style="background:${bg};color:${color}">${s.grade}<br><span style="font-size:10px;opacity:.8">${s.score}/70</span></span>
+  <div class="ov-row-grade" style="background:${bg};color:${color}"><span class="ov-grade-letter">${s.grade}</span><span class="ov-grade-score">${s.score}/70</span></div>
   <div class="ov-row-info">
     <div class="ov-row-name">${escHtml(s.name)}</div>
     <div class="ov-row-bottom">
@@ -805,10 +805,12 @@ body {
 .ov-stat-lbl { font-size: 9px; color: var(--fg-dim); text-transform: uppercase; letter-spacing: .06em; font-weight: 500; margin-block-start: 1px; }
 .ov-tldr { font-size: 12px; color: var(--fg-muted); font-style: italic; line-height: 1.5; margin: 0; }
 .ov-list { display: flex; flex-direction: column; gap: 6px; }
-.ov-row { display: grid; grid-template-columns: 28px 58px 1fr 120px; align-items: center; gap: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; text-decoration: none; color: inherit; transition: border-color .15s, box-shadow .15s; }
+.ov-row { display: grid; grid-template-columns: 28px 70px 1fr 120px; align-items: stretch; gap: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; text-decoration: none; color: inherit; transition: border-color .15s, box-shadow .15s; }
 .ov-row:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(8,145,178,.12); }
-.ov-rank { font-family: var(--font-mono); font-size: 13px; color: var(--fg-dim); font-weight: 700; text-align: center; }
-.ov-row-grade { font-family: var(--font-mono); font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 6px; white-space: nowrap; text-align: center; }
+.ov-rank { font-family: var(--font-mono); font-size: 13px; color: var(--fg-dim); font-weight: 700; text-align: center; align-self: center; }
+.ov-row-grade { font-family: var(--font-mono); font-weight: 700; border-radius: 8px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 10px 8px; }
+.ov-grade-letter { font-family: var(--font-head); font-size: 28px; font-weight: 800; line-height: 1; }
+.ov-grade-score { font-size: 11px; opacity: .85; line-height: 1; font-variant-numeric: tabular-nums; }
 .ov-row-info { min-width: 0; }
 .ov-row-name { font-family: var(--font-head); font-size: 16px; font-weight: 700; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-block-end: 8px; }
 .ov-row-bottom { display: flex; align-items: flex-start; gap: 14px; }
