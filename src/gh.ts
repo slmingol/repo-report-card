@@ -117,10 +117,12 @@ export async function repoView(ref: RepoRef): Promise<RepoMetadata> {
     };
 }
 
+const SERVICE_ACCOUNT = /service[._-]?account|\[bot\]|[-_]bot$|-svc$|-ci$|dependabot/i;
+
 export async function repoContributors(ref: RepoRef): Promise<string[]> {
     try {
         const raw = await run('gh', ['api', `repos/${repoSpec(ref)}/contributors`, '--paginate', '--jq', '.[].login'], { timeoutMs: 30_000 });
-        return raw.trim().split('\n').filter(Boolean);
+        return raw.trim().split('\n').filter(login => login && !SERVICE_ACCOUNT.test(login));
     } catch {
         return [];
     }
