@@ -1285,7 +1285,9 @@ function printAll() {
       bodies.push(f.contentDocument.body.innerHTML);
     } catch(e) {}
   });
-  w.document.write('<!doctype html><html><head>' + styles + '</head><body style="padding:0;margin:0">' + bodies.join('') + '</body></html>');
+  var theme = document.documentElement.getAttribute('data-theme') || '';
+  var themeAttr = theme ? ' data-theme="' + theme + '"' : '';
+  w.document.write('<!doctype html><html' + themeAttr + '><head>' + styles + '</head><body style="padding:0;margin:0">' + bodies.join('') + '</body></html>');
   w.document.close();
   w.focus();
   setTimeout(function() { w.print(); }, 500);
