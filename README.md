@@ -193,15 +193,89 @@ professional standards, not just "good for a hackathon." A 9 means "would impres
 production code review." Most hackathon entries should score 4–7 per dimension.
 A perfect 70 should never happen; 60+ is outstanding.
 
-| Dimension | What it measures | 1–2 | 4–5 | 6–7 | 8–9 | 10 |
-|---|---|---|---|---|---|---|
-| **Architecture** | Code structure, layering, and separation of concerns | Single file / script dump; no structure | Some folders but logic mixed, no enforced boundaries | Clear modules or layers with reasonable separation | Deliberate layering, dependency direction enforced, abstractions earn their keep | Production-grade: plugin points, enforced import graph, testable seams, documented architecture decisions |
-| **Integrations** | External systems wired together and actually called at runtime | None, or hardcoded stub data | One real API/datastore, minimal wiring | 2–3 real integrations with basic error handling | 4–5 real integrations, retries or fallback, secrets not hardcoded | 6+ integrations under a unified abstraction; auth, secret management, and error paths all addressed |
-| **Problem Difficulty** | Inherent hardness of the core problem attempted | CRUD or tutorial-level; solved example exists online | Standard problem with one extra constraint | Non-trivial domain logic, real algorithmic challenge, or meaningful state management | Hard sub-problem: real-time sync, distributed state, ML inference, significant performance constraints | Legitimately hard: novel algorithm, production distributed system concern, or a problem most engineers wouldn't attempt in a week |
-| **Scope Delivered** | How much works end-to-end inside the hackathon window | Skeleton, boilerplate, or README only | One thin flow works; most features are stubs | Core flow complete; 1–2 secondary features working | Multiple features complete and integrated; minimal stub code | Comprehensive delivery: primary + secondary flows all working, edge cases handled, demo-ready without apology |
-| **Engineering Rigor** | Test coverage, CI pipeline, error handling, and code quality | No tests, no CI, no linting | A few tests or a basic CI step | Meaningful tests and a working CI pipeline | Good coverage, CI enforces lint/type-check/test, solid error handling throughout | Exceptional: property tests or integration tests, strict type checking enforced in CI, error paths documented and handled |
-| **Innovation** | Novelty and creativity of the approach or solution | Reimplements a tutorial; nothing new | Applies existing tools in a standard way | One genuinely creative design choice or non-obvious technical decision | Approach is inventive — solves the problem in a way most teams wouldn't think of | Legitimately novel: technique, architecture, or product idea that hasn't been done this way before |
-| **Operational Readiness** | Containerization, deployment, observability, and reproducibility | No Dockerfile, no deployment, no way to run it | A Dockerfile exists but may not run; no deployment | Container setup works; basic README covers how to run | Reproducible container setup, documented deployment, some observability (logs, metrics, or health checks) | Production-ready: multi-stage Docker, environment parity, monitoring/alerting wired, secrets management, graceful shutdown |
+<details>
+<summary><strong>Architecture</strong> — Code structure, layering, and separation of concerns</summary>
+
+| Score | Description |
+|---|---|
+| 1–2 | Single file / script dump; no structure |
+| 4–5 | Some folders but logic mixed, no enforced boundaries |
+| 6–7 | Clear modules or layers with reasonable separation |
+| 8–9 | Deliberate layering, dependency direction enforced, abstractions earn their keep |
+| 10 | Production-grade: plugin points, enforced import graph, testable seams, documented architecture decisions |
+</details>
+
+<details>
+<summary><strong>Integrations</strong> — External systems wired together and actually called at runtime</summary>
+
+| Score | Description |
+|---|---|
+| 1–2 | None, or hardcoded stub data |
+| 4–5 | One real API/datastore, minimal wiring |
+| 6–7 | 2–3 real integrations with basic error handling |
+| 8–9 | 4–5 real integrations, retries or fallback, secrets not hardcoded |
+| 10 | 6+ integrations under a unified abstraction; auth, secret management, and error paths all addressed |
+</details>
+
+<details>
+<summary><strong>Problem Difficulty</strong> — Inherent hardness of the core problem attempted</summary>
+
+| Score | Description |
+|---|---|
+| 1–2 | CRUD or tutorial-level; solved example exists online |
+| 4–5 | Standard problem with one extra constraint |
+| 6–7 | Non-trivial domain logic, real algorithmic challenge, or meaningful state management |
+| 8–9 | Hard sub-problem: real-time sync, distributed state, ML inference, significant performance constraints |
+| 10 | Legitimately hard: novel algorithm, production distributed system concern, or a problem most engineers wouldn't attempt in a week |
+</details>
+
+<details>
+<summary><strong>Scope Delivered</strong> — How much works end-to-end inside the hackathon window</summary>
+
+| Score | Description |
+|---|---|
+| 1–2 | Skeleton, boilerplate, or README only |
+| 4–5 | One thin flow works; most features are stubs |
+| 6–7 | Core flow complete; 1–2 secondary features working |
+| 8–9 | Multiple features complete and integrated; minimal stub code |
+| 10 | Comprehensive delivery: primary + secondary flows all working, edge cases handled, demo-ready without apology |
+</details>
+
+<details>
+<summary><strong>Engineering Rigor</strong> — Test coverage, CI pipeline, error handling, and code quality</summary>
+
+| Score | Description |
+|---|---|
+| 1–2 | No tests, no CI, no linting |
+| 4–5 | A few tests or a basic CI step |
+| 6–7 | Meaningful tests and a working CI pipeline |
+| 8–9 | Good coverage, CI enforces lint/type-check/test, solid error handling throughout |
+| 10 | Exceptional: property tests or integration tests, strict type checking enforced in CI, error paths documented and handled |
+</details>
+
+<details>
+<summary><strong>Innovation</strong> — Novelty and creativity of the approach or solution</summary>
+
+| Score | Description |
+|---|---|
+| 1–2 | Reimplements a tutorial; nothing new |
+| 4–5 | Applies existing tools in a standard way |
+| 6–7 | One genuinely creative design choice or non-obvious technical decision |
+| 8–9 | Approach is inventive — solves the problem in a way most teams wouldn't think of |
+| 10 | Legitimately novel: technique, architecture, or product idea that hasn't been done this way before |
+</details>
+
+<details>
+<summary><strong>Operational Readiness</strong> — Containerization, deployment, observability, and reproducibility</summary>
+
+| Score | Description |
+|---|---|
+| 1–2 | No Dockerfile, no deployment, no way to run it |
+| 4–5 | A Dockerfile exists but may not run; no deployment |
+| 6–7 | Container setup works; basic README covers how to run |
+| 8–9 | Reproducible container setup, documented deployment, some observability (logs, metrics, or health checks) |
+| 10 | Production-ready: multi-stage Docker, environment parity, monitoring/alerting wired, secrets management, graceful shutdown |
+</details>
 
 Judging guidance:
 - **Avoid grade inflation.** Score 7 means genuinely good. Score 5 is the expected baseline for a working entry. Reserve 9–10 for work that would impress a senior engineer outside the hackathon context.
