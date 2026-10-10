@@ -1040,7 +1040,8 @@ function openScoreInTab(slug) {
       url = URL.createObjectURL(new Blob([html], {type:'text/html'}));
     } catch(e) { return; }
   }
-  window.open(url, '_blank', 'noopener');
+  var w = window.open(url, '_blank');
+  if (w) w.blur();
   window.focus();
 }
 
