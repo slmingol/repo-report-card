@@ -24,7 +24,7 @@ _EVENT_NOTE = $(if $(EVENT),\n\nThe event name is "$(EVENT)". Use this exact str
 _REPOS      = grep -v '^\s*\#\|^\s*$$' $(REPOS_FILE)
 
 .DEFAULT_GOAL := help
-.PHONY: help check score score-all render full open list clean clean-all
+.PHONY: help check score score-all render full open list clean clean-all screenshot
 
 # ── Help ──────────────────────────────────────────────────────────────────────
 help:
@@ -40,6 +40,7 @@ help:
 	@printf "  $(CY)make clean$(R)       Remove *-score.json files\n"
 	@printf "  $(CY)make clean-all$(R)   Remove score files + $(OUT)\n"
 	@printf "  $(CY)make check$(R)       Verify required tools are installed\n"
+	@printf "  $(CY)make screenshot$(R)  Refresh README screenshots from demo data\n"
 	@printf "\n $(B)Variables$(R)\n"
 	@printf "  $(YL)SINCE$(R)=$(D)YYYY-MM-DD$(R)      Hackathon start date (commit window filter)\n"
 	@printf "  $(YL)BUDGET$(R)=$(D)$(BUDGET)$(R)         Max source chars sampled per repo\n"
@@ -158,3 +159,30 @@ clean-all: clean
 	@[ -f "$(OUT)" ] \
 	  && (printf "$(YL)→$(R) Removing $(B)$(OUT)$(R)\n"; rm -f "$(OUT)") \
 	  || true
+
+# ── Screenshots ────────────────────────────────────────────────────────────────
+SHOT_PORT ?= 8742
+screenshot:
+	@command -v shot-scraper >/dev/null 2>&1 || (printf "$(RD)error:$(R) shot-scraper not found — pip install shot-scraper && playwright install chromium\n" && exit 1)
+	@printf "\n$(CY)▶$(R) Rendering demo HTML\n"
+	@skinner-render demo/*.json > /tmp/rrc-demo.html
+	@printf "$(CY)▶$(R) Starting server on port $(SHOT_PORT)\n"
+	@python3 -m http.server $(SHOT_PORT) --directory /tmp &>/tmp/rrc-srv.log & SRV=$$!; \
+	sleep 1; \
+	BASE="http://localhost:$(SHOT_PORT)/rrc-demo.html"; \
+	OUT="media/screenshots"; \
+	DARK="document.documentElement.setAttribute('data-theme','dark');"; \
+	printf "$(CY)▶$(R) Capturing light mode\n"; \
+	shot-scraper "$$BASE" -o "$$OUT/01-detail-view.png"      --width 1440 --height 900 --timeout 2000 2>/dev/null; \
+	shot-scraper "$$BASE" -o "$$OUT/02-overview-grid.png"    --width 1440 --height 900 --javascript "document.getElementById('btnOverview').click();" --wait-for "document.getElementById('btnOverview').classList.contains('active')" --timeout 2000 2>/dev/null; \
+	shot-scraper "$$BASE" -o "$$OUT/03-overview-list.png"    --width 1440 --height 900 --javascript "document.getElementById('btnOverview').click(); document.getElementById('btnOvList').click();" --wait-for "document.getElementById('btnOvList').classList.contains('active')" --timeout 2000 2>/dev/null; \
+	shot-scraper "$$BASE" -o "$$OUT/04-sidebar.png"          --width 1440 --height 900 --selector aside --timeout 2000 2>/dev/null; \
+	shot-scraper "$$BASE" -o "$$OUT/05-detail-dims.png"      --width 1440 --height 900 --javascript "window.scrollTo(0,800);" --timeout 2000 2>/dev/null; \
+	printf "$(CY)▶$(R) Capturing dark mode\n"; \
+	shot-scraper "$$BASE" -o "$$OUT/01-detail-view-dark.png"   --width 1440 --height 900 --javascript "$$DARK" --timeout 2000 2>/dev/null; \
+	shot-scraper "$$BASE" -o "$$OUT/02-overview-grid-dark.png" --width 1440 --height 900 --javascript "$$DARK document.getElementById('btnOverview').click();" --wait-for "document.getElementById('btnOverview').classList.contains('active')" --timeout 2000 2>/dev/null; \
+	shot-scraper "$$BASE" -o "$$OUT/03-overview-list-dark.png" --width 1440 --height 900 --javascript "$$DARK document.getElementById('btnOverview').click(); document.getElementById('btnOvList').click();" --wait-for "document.getElementById('btnOvList').classList.contains('active')" --timeout 2000 2>/dev/null; \
+	shot-scraper "$$BASE" -o "$$OUT/04-sidebar-dark.png"       --width 1440 --height 900 --javascript "$$DARK" --selector aside --timeout 2000 2>/dev/null; \
+	shot-scraper "$$BASE" -o "$$OUT/05-detail-dims-dark.png"   --width 1440 --height 900 --javascript "$$DARK window.scrollTo(0,800);" --timeout 2000 2>/dev/null; \
+	kill $$SRV 2>/dev/null; \
+	printf "$(GR)✓$(R) 10 screenshots written to $(B)$$OUT/$(R)\n\n"

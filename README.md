@@ -55,28 +55,46 @@ make open OUT=results.html
 
 **Detail view** — project header, contributor avatars, Skinner opening quip, stat counters
 
-<img src="media/screenshots/01-detail-view.png" width="860" alt="Detail view" />
+<table>
+<tr>
+<td><img src="media/screenshots/01-detail-view.png" alt="Detail view — light" /></td>
+<td><img src="media/screenshots/01-detail-view-dark.png" alt="Detail view — dark" /></td>
+</tr>
+<tr><td align="center">Light</td><td align="center">Dark</td></tr>
+</table>
 
 **Dimension breakdown** — per-dimension score bars, evidence, and Skinner quip
 
-<img src="media/screenshots/05-detail-dims.png" width="860" alt="Dimension breakdown" />
+<table>
+<tr>
+<td><img src="media/screenshots/05-detail-dims.png" alt="Dimension breakdown — light" /></td>
+<td><img src="media/screenshots/05-detail-dims-dark.png" alt="Dimension breakdown — dark" /></td>
+</tr>
+<tr><td align="center">Light</td><td align="center">Dark</td></tr>
+</table>
 
-**Overview views** — grid and list, both showing grade, score, stat chips, and TLDR
+**Overview — grid and list**
 
 <table>
 <tr>
-<td><img src="media/screenshots/02-overview-grid.png" alt="Overview grid" /></td>
-<td><img src="media/screenshots/03-overview-list.png" alt="Overview list" /></td>
+<td><img src="media/screenshots/02-overview-grid.png" alt="Overview grid — light" /></td>
+<td><img src="media/screenshots/02-overview-grid-dark.png" alt="Overview grid — dark" /></td>
 </tr>
 <tr>
-<td align="center">Grid</td>
-<td align="center">List</td>
+<td><img src="media/screenshots/03-overview-list.png" alt="Overview list — light" /></td>
+<td><img src="media/screenshots/03-overview-list-dark.png" alt="Overview list — dark" /></td>
 </tr>
 </table>
 
 **Sidebar** — grade legend, team list with grade pills, search, print buttons
 
-<img src="media/screenshots/04-sidebar.png" width="280" alt="Sidebar" />
+<table>
+<tr>
+<td><img src="media/screenshots/04-sidebar.png" alt="Sidebar — light" /></td>
+<td><img src="media/screenshots/04-sidebar-dark.png" alt="Sidebar — dark" /></td>
+</tr>
+<tr><td align="center">Light</td><td align="center">Dark</td></tr>
+</table>
 
 </div>
 
@@ -151,6 +169,7 @@ make full SINCE=2026-10-08 EVENT="Acme Hackathon 2026" OUT=results.html JOBS=4
 | `make clean` | Remove `*-score.json` files |
 | `make clean-all` | Remove score files + `OUT` |
 | `make check` | Verify required tools are on PATH |
+| `make screenshot` | Refresh `media/screenshots/` from demo data (requires `shot-scraper`) |
 
 `repos.txt` — one `owner/repo` per line, `#` lines are comments.
 
