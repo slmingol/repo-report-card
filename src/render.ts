@@ -316,7 +316,7 @@ body {
 .header { background: var(--surface); border: 1px solid var(--border); border-top: 3px solid var(--accent); border-radius: 10px; padding: 24px 28px 20px; margin-block-end: 20px; }
 .event-label { font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); display: inline-block; background: color-mix(in srgb, var(--accent) 12%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent); border-radius: 20px; padding: 3px 12px; margin-block-end: 14px; }
 .project-name { font-family: var(--font-head); font-size: clamp(28px,6vw,46px); font-weight: 800; line-height: 1.1; color: var(--fg); margin: 0 0 6px; }
-.project-sub { font-size: 20px; color: var(--fg); font-weight: 500; font-style: italic; margin: 0 0 16px; line-height: 1.55; padding: 12px 16px; border-left: 3px solid var(--accent); background: color-mix(in srgb, var(--accent) 7%, transparent); border-radius: 0 6px 6px 0; }
+.project-sub { font-size: 20px; color: color-mix(in srgb, var(--accent) 50%, var(--fg)); font-weight: 500; font-style: italic; margin: 0 0 16px; line-height: 1.55; padding: 12px 16px; border-left: 3px solid var(--accent); background: color-mix(in srgb, var(--accent) 7%, transparent); border-radius: 0 6px 6px 0; }
 .meta-table { display: grid; grid-template-columns: auto 1fr; gap: 0; font-size: 15px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
 .meta-row-pair { display: contents; }
 .meta-lbl { font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-dim); white-space: nowrap; padding: 8px 14px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); background: var(--surface); }
@@ -663,6 +663,31 @@ function buildCombinedHtml(sections: Section[], skinnerImgs: string[], rubric: s
 </a>`;
     }).join('\n');
 
+    const overviewRows = sections.map((s, i) => {
+        const color = GRADE_COLOR[s.grade] ?? '#566079';
+        const bg    = GRADE_BG[s.grade]    ?? '#F1F5F9';
+        const chipKeys = ['commits', 'files', 'contributors', 'bytes'];
+        const chips = chipKeys.map(k => {
+            const v = s.stats[k] || '—';
+            return `<span class="ov-row-chip">${escHtml(k)} ${escHtml(v)}</span>`;
+        }).join('');
+        const pct = Math.round((s.score / 70) * 100);
+        const tldrShort = s.tldr ? escHtml(s.tldr.slice(0, 120)) + (s.tldr.length > 120 ? '…' : '') : '';
+        return `<a class="ov-row" href="#${s.slug}" data-name="${s.name.toLowerCase()}">
+  <span class="ov-rank">${i + 1}</span>
+  <span class="ov-row-grade" style="background:${bg};color:${color}">${s.grade}<br><span style="font-size:10px;opacity:.8">${s.score}/70</span></span>
+  <div class="ov-row-info">
+    <div class="ov-row-name">${escHtml(s.name)}</div>
+    <div class="ov-row-chips">${chips}</div>
+  </div>
+  <div class="ov-row-tldr">${tldrShort}</div>
+  <div class="ov-row-score">
+    <div><span class="ov-row-score-val">${s.score}</span><span class="ov-row-score-denom"> /70</span></div>
+    <div class="ov-row-bar"><div class="ov-row-bar-fill" style="width:${pct}%"></div></div>
+  </div>
+</a>`;
+    }).join('\n');
+
     return `<!doctype html>
 <html lang="en">
 <head>
@@ -764,6 +789,10 @@ body {
 .view-btn { flex: 1; padding: 5px 0; font-size: 11px; font-family: var(--font-mono); font-weight: 600; border: 1px solid var(--border); border-radius: var(--r); background: transparent; color: var(--fg-muted); cursor: pointer; transition: background .15s, color .15s; }
 .view-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 .overview-panel { padding: 24px 20px; }
+.ov-toolbar { display: flex; align-items: center; justify-content: flex-end; margin-block-end: 16px; }
+.ov-view-toggle { display: flex; gap: 3px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 3px; }
+.ov-view-btn { padding: 4px 10px; font-size: 10px; font-family: var(--font-mono); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; border: none; border-radius: 4px; background: transparent; color: var(--fg-muted); cursor: pointer; transition: background .12s, color .12s; }
+.ov-view-btn.active { background: var(--accent); color: #fff; }
 .overview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
 .ov-card { display: block; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; text-decoration: none; color: inherit; transition: border-color .15s, box-shadow .15s; }
 .ov-card:hover { border-color: var(--accent); box-shadow: 0 2px 12px rgba(8,145,178,.15); }
@@ -775,6 +804,21 @@ body {
 .ov-stat-num { font-family: var(--font-head); font-size: 15px; font-weight: 800; color: var(--fg); font-variant-numeric: tabular-nums; line-height: 1.2; }
 .ov-stat-lbl { font-size: 9px; color: var(--fg-dim); text-transform: uppercase; letter-spacing: .06em; font-weight: 500; margin-block-start: 1px; }
 .ov-tldr { font-size: 12px; color: var(--fg-muted); font-style: italic; line-height: 1.5; margin: 0; }
+.ov-list { display: flex; flex-direction: column; gap: 6px; }
+.ov-row { display: grid; grid-template-columns: 24px 44px 1fr auto 110px; align-items: center; gap: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; text-decoration: none; color: inherit; transition: border-color .15s, box-shadow .15s; }
+.ov-row:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(8,145,178,.12); }
+.ov-rank { font-family: var(--font-mono); font-size: 11px; color: var(--fg-dim); font-weight: 700; text-align: center; }
+.ov-row-grade { font-family: var(--font-mono); font-size: 11px; font-weight: 700; padding: 3px 7px; border-radius: 6px; white-space: nowrap; text-align: center; }
+.ov-row-info { min-width: 0; }
+.ov-row-name { font-family: var(--font-head); font-size: 14px; font-weight: 700; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ov-row-chips { display: flex; gap: 5px; margin-block-start: 4px; flex-wrap: wrap; }
+.ov-row-chip { font-family: var(--font-mono); font-size: 9.5px; color: var(--fg-dim); background: var(--surface-2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; white-space: nowrap; }
+.ov-row-tldr { font-size: 12px; color: var(--fg-muted); font-style: italic; line-height: 1.4; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.ov-row-score { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+.ov-row-score-val { font-family: var(--font-head); font-size: 20px; font-weight: 800; color: var(--score); font-variant-numeric: tabular-nums; line-height: 1; }
+.ov-row-score-denom { font-size: 11px; color: var(--fg-dim); font-weight: 400; font-family: var(--font-mono); }
+.ov-row-bar { width: 100%; height: 4px; background: var(--bar-track); border-radius: 2px; overflow: hidden; }
+.ov-row-bar-fill { height: 100%; border-radius: 2px; background: var(--score); }
 .rubric-btn { margin: 0 14px 12px; padding: 6px 10px; font-size: 10px; font-family: var(--font-mono); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-muted); background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r); cursor: pointer; width: calc(100% - 28px); text-align: left; display: flex; align-items: center; gap: 6px; }
 .rubric-btn:hover { border-color: var(--accent); color: var(--accent); }
 .rubric-btn::before { content: '⊞'; font-size: 12px; }
@@ -834,8 +878,17 @@ ${sidebarItems}
 
 <main class="content">
 <div id="overviewPanel" class="overview-panel" style="display:none">
+  <div class="ov-toolbar">
+    <div class="ov-view-toggle">
+      <button class="ov-view-btn active" id="btnOvGrid" onclick="setOvView('grid')">⊞ Grid</button>
+      <button class="ov-view-btn" id="btnOvList" onclick="setOvView('list')">≡ List</button>
+    </div>
+  </div>
   <div class="overview-grid" id="overviewGrid">
 ${overviewCards}
+  </div>
+  <div class="ov-list" id="overviewList" style="display:none">
+${overviewRows}
   </div>
 </div>
 <div id="detailPanel">
@@ -865,8 +918,8 @@ function setView(v) {
   if (v === 'overview') applySearch(document.querySelector('.search')?.value || '');
 }
 
-// Overview tile → switch to detail view and scroll to section
-document.querySelectorAll('.ov-card').forEach(function(card) {
+// Overview tile/row → switch to detail view and scroll to section
+document.querySelectorAll('.ov-card, .ov-row').forEach(function(card) {
   card.addEventListener('click', function(e) {
     e.preventDefault();
     var href = card.getAttribute('href');
@@ -877,6 +930,15 @@ document.querySelectorAll('.ov-card').forEach(function(card) {
     }
   });
 });
+
+var ovViewMode = 'grid';
+function setOvView(v) {
+  ovViewMode = v;
+  document.getElementById('overviewGrid').style.display = v === 'grid' ? '' : 'none';
+  document.getElementById('overviewList').style.display = v === 'list' ? '' : 'none';
+  document.getElementById('btnOvGrid').classList.toggle('active', v === 'grid');
+  document.getElementById('btnOvList').classList.toggle('active', v === 'list');
+}
 
 const search = document.querySelector('.search');
 const items  = document.querySelectorAll('.team-item');
@@ -889,7 +951,7 @@ function applySearch(raw) {
     item.style.display = match ? '' : 'none';
     if (match) shown++;
   });
-  document.querySelectorAll('.ov-card').forEach(card => {
+  document.querySelectorAll('.ov-card, .ov-row').forEach(card => {
     const match = !q || card.dataset.name?.includes(q);
     card.style.display = match ? '' : 'none';
   });
