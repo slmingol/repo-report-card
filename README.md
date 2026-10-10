@@ -3,16 +3,16 @@
 <img src="media/logo.png" alt="Principal Skinner" width="120" />
 
 A two-CLI pipeline for judging hackathon repos. It builds a factual JSON dossier of
-each repo, pipes it to Claude for scoring, and stitches the per-repo HTML scorecards
-into a single portable report with a sidebar, search, and an overview tile view.
+each repo, pipes it to Claude for scoring, and stitches the scored JSON files into a
+single portable HTML report with a sidebar, search, and an overview tile view.
 
 Neither CLI makes LLM calls itself. Claude Code runs them and applies the rubric.
 
 ## Architecture
 
 ```
-principal-skinner <owner/repo>   →  JSON dossier  →  claude  →  <repo>-scorecard.html
-skinner-render *.html            →  combined results.html
+principal-skinner <owner/repo>   →  JSON dossier  →  claude  →  <repo>-score.json
+skinner-render *-score.json      →  combined results.html
 ```
 
 The `Makefile` drives both steps with `make full`.
@@ -47,7 +47,7 @@ principal-skinner <owner/repo | github url> [--since YYYY-MM-DD] [--budget 80000
 |---|---|---|
 | `<repo>` | required | `owner/repo`, `https://github.com/owner/repo`, or `HOST/owner/repo` for GitHub Enterprise |
 | `--since` | none | Only count commits on or after this date (UTC midnight). Use the hackathon start date. |
-| `--budget` | `80000` | Max characters of source samples. No single file takes more than 1/4 of the budget. |
+| `--budget` | `300000` | Max characters of source samples. No single file takes more than 1/4 of the budget. |
 
 Output goes to **stdout**; progress and errors go to **stderr**.
 
@@ -83,25 +83,17 @@ Notes:
 
 ## CLI 2 — `skinner-render`
 
-Stitches one or more per-repo HTML scorecards into a single self-contained HTML file with:
+Stitches one or more `*-score.json` files into a single self-contained HTML file with:
 
-- Fixed sidebar with search and Detail / Overview toggle
-- Per-team grade badges and scores
-- Overview tile view: score, stats strip, and TLDR for every team at a glance
-- Detail view: each scorecard rendered in its own iframe with full CSS isolation
-
-```bash
-skinner-render [--score [--since YYYY-MM-DD] [--budget N]] <inputs...>
-```
-
-Inputs can be existing `*-scorecard.html` files, or `owner/repo` strings when `--score` is given.
+- Fixed sidebar: search, Detail / Overview toggle, grade legend (A–F / 70), light/dark mode
+- Per-team grade badge, score, and ↗ open-in-tab button in sidebar, grid, and list
+- Overview grid + list view: grade, score, stat chips, TLDR, contributor avatars
+- Detail view: each scorecard in its own iframe with full CSS isolation
+- Print Active Team: opens active scorecard in new tab and triggers print
+- Print All Teams: serialises all scorecards into one document for print / PDF export
 
 ```bash
-# Stitch existing scorecards
-skinner-render *.scorecard.html > results.html
-
-# Score + stitch in one step
-skinner-render --score --since 2026-10-08 acme/repo-a acme/repo-b > results.html
+skinner-render *-score.json > results.html
 ```
 
 ---
@@ -116,11 +108,11 @@ make full SINCE=2026-10-08 REPOS_FILE=repos.txt OUT=results.html JOBS=4
 |---|---|
 | `make score` | Score one repo — `REPO=owner/repo` |
 | `make score-all` | Score all repos in `REPOS_FILE` (parallel with `JOBS=N`) |
-| `make render` | Stitch `*-scorecard.html` → `OUT` |
+| `make render` | Stitch `*-score.json` → `OUT` |
 | `make full` | score-all + render |
 | `make open` | Open `OUT` in browser |
-| `make clean` | Remove `*-scorecard.html` files |
-| `make clean-all` | Remove scorecards + `OUT` |
+| `make clean` | Remove `*-score.json` files |
+| `make clean-all` | Remove score files + `OUT` |
 | `make check` | Verify required tools are on PATH |
 
 `repos.txt` — one `owner/repo` per line, `#` lines are comments.
