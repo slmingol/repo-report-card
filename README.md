@@ -1,5 +1,12 @@
 <div align="center">
-  <img src="media/logo.png" alt="Principal Skinner" width="160" /><br/>
+  <table><tr>
+    <td><img src="imgs/cropped/Principal_Skinner_20.png" alt="" height="120" /></td>
+    <td><img src="imgs/cropped/Principal_Skinner_08.png" alt="" height="120" /></td>
+    <td><img src="imgs/cropped/Principal_Skinner_01.png" alt="" height="120" /></td>
+    <td><img src="imgs/cropped/Principal_Skinner_25.png" alt="" height="120" /></td>
+    <td><img src="imgs/cropped/Principal_Skinner_10.png" alt="" height="120" /></td>
+    <td><img src="imgs/cropped/Principal_Skinner_30.png" alt="" height="120" /></td>
+  </tr></table>
   <h1>Repo Report Card</h1>
   <p><em>"I must confess, Superintendent, this submission is not entirely without merit."</em></p>
   <p>A two-CLI hackathon judging pipeline powered by Claude.<br>
