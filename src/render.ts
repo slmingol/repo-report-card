@@ -612,8 +612,11 @@ function _rrcApplyHeight() {
   var h = Math.max(document.documentElement.scrollHeight, document.body ? document.body.scrollHeight : 0);
   if (!(h > 200)) return;
   try {
-    // srcdoc is same-origin: directly set height on the matching parent frame
-    var fs = window.parent.document.querySelectorAll('.scorecard-frame');
+    // srcdoc is same-origin: directly set height and sync theme on the matching parent frame
+    var parentDoc = window.parent.document;
+    var parentTheme = parentDoc.documentElement.getAttribute('data-theme');
+    if (parentTheme) document.documentElement.setAttribute('data-theme', parentTheme);
+    var fs = parentDoc.querySelectorAll('.scorecard-frame');
     for (var i = 0; i < fs.length; i++) {
       if (fs[i].contentDocument === document) { fs[i].style.height = h + 'px'; break; }
     }
@@ -1281,10 +1284,12 @@ function printAll() {
 }
 
 document.querySelectorAll('iframe.scorecard-frame').forEach(function(f) {
-  f.addEventListener('load', function() {
+  function applyTheme() {
     var cur = document.documentElement.getAttribute('data-theme');
     if (cur) { try { f.contentDocument.documentElement.setAttribute('data-theme', cur); } catch(e) {} }
-  });
+  }
+  applyTheme(); // srcdoc load fires before this script runs; apply immediately
+  f.addEventListener('load', applyTheme);
 });
 
 const sections = document.querySelectorAll('.team-section');
@@ -1330,7 +1335,7 @@ function exportCsv() {
   });
   var csv = [header].concat(rows).map(function(r) {
     return r.map(function(v) { var s = String(v); return s.includes(',') || s.includes('"') ? '"' + s.replace(/"/g,'""') + '"' : s; }).join(',');
-  }).join('\r\n');
+  }).join('\\r\\n');
   var a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
   a.download = 'repo-report-card.csv';
