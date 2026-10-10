@@ -844,10 +844,10 @@ body {
 .ov-row-bar-fill { height: 100%; border-radius: 2px; background: var(--score); }
 .grade-legend { margin: 0 14px 10px; padding: 10px 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r); }
 .grade-legend-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--fg-dim); margin-block-end: 8px; }
-.grade-legend-rows { display: flex; flex-direction: row; gap: 4px; }
-.grade-legend-row { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
-.grade-legend-pill { font-family: var(--font-head); font-weight: 800; font-size: 14px; padding: 4px 0; border-radius: 6px; width: 100%; text-align: center; line-height: 1.3; }
-.grade-legend-range { color: var(--fg-dim); font-weight: 600; font-size: 9px; font-family: var(--font-mono); text-align: center; white-space: nowrap; }
+.grade-legend-rows { display: flex; flex-direction: column; gap: 4px; }
+.grade-legend-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.grade-legend-pill { font-family: var(--font-head); font-weight: 800; font-size: 13px; padding: 2px 0; border-radius: 5px; flex-shrink: 0; width: 30px; text-align: center; line-height: 1.4; }
+.grade-legend-range { color: var(--fg-muted); font-weight: 700; font-size: 12px; font-family: var(--font-mono); }
 .rubric-btn { margin: 0 14px 6px; padding: 6px 10px; font-size: 10px; font-family: var(--font-mono); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-muted); background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r); cursor: pointer; width: calc(100% - 28px); text-align: left; display: flex; align-items: center; gap: 6px; }
 .rubric-btn:hover { border-color: var(--accent); color: var(--accent); }
 .rubric-btn::before { content: '⊞'; font-size: 12px; }
