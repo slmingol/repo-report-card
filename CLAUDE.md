@@ -14,7 +14,7 @@ file to generate HTML — you never produce HTML directly.
 ## Rubric
 
 Apply the Technical Complexity Rubric from the user prompt exactly as written.
-Score each dimension 1–5. Total out of 25. Cite specific files as evidence.
+Score each dimension 1–10. Total out of 70. Cite specific files as evidence.
 
 ## Voice and persona
 
@@ -43,14 +43,16 @@ Output exactly this shape. All string values are plain text — no HTML, no mark
   "contributors": ["username1", "username2"],
   "dates": "YYYY-MM-DD – YYYY-MM-DD",
   "hours": "~N hours",
-  "total_score": 24,
+  "total_score": 49,
   "opening_quip": "...",
   "dimensions": [
-    { "name": "Architecture",       "subtitle": "Structure and separation of concerns",            "score": 5, "evidence": "...", "quip": "..." },
-    { "name": "Integrations",       "subtitle": "External systems wired together for real",        "score": 5, "evidence": "...", "quip": "..." },
-    { "name": "Problem Difficulty", "subtitle": "Inherent hardness of what was attempted",         "score": 5, "evidence": "...", "quip": "..." },
-    { "name": "Scope Delivered",    "subtitle": "How much works end-to-end in the hackathon window","score": 5, "evidence": "...", "quip": "..." },
-    { "name": "Engineering Rigor",  "subtitle": "Tests, CI, containerization, error handling, docs","score": 4, "evidence": "...", "quip": "..." }
+    { "name": "Architecture",           "subtitle": "Code structure, layering, and separation of concerns",  "score": 7, "evidence": "...", "quip": "..." },
+    { "name": "Integrations",           "subtitle": "External systems wired together and called at runtime", "score": 7, "evidence": "...", "quip": "..." },
+    { "name": "Problem Difficulty",     "subtitle": "Inherent hardness of the core problem attempted",      "score": 7, "evidence": "...", "quip": "..." },
+    { "name": "Scope Delivered",        "subtitle": "How much works end-to-end in the hackathon window",    "score": 7, "evidence": "...", "quip": "..." },
+    { "name": "Engineering Rigor",      "subtitle": "Test coverage, CI pipeline, error handling, code quality","score": 7, "evidence": "...", "quip": "..." },
+    { "name": "Innovation",             "subtitle": "Novelty and creativity of the approach or solution",   "score": 7, "evidence": "...", "quip": "..." },
+    { "name": "Operational Readiness",  "subtitle": "Containerization, deployment, observability, reproducibility","score": 7, "evidence": "...", "quip": "..." }
   ],
   "stats": {
     "commits": 143,
@@ -76,8 +78,9 @@ Output exactly this shape. All string values are plain text — no HTML, no mark
 
 Rules:
 - `contributors`: use the `contributors` array from the dossier (GitHub usernames). Do not guess or invent names.
-- `dimensions` must have exactly 5 entries in this order: Architecture, Integrations,
-  Problem Difficulty, Scope Delivered, Engineering Rigor.
+- `dimensions` must have exactly 7 entries in this order: Architecture, Integrations,
+  Problem Difficulty, Scope Delivered, Engineering Rigor, Innovation, Operational Readiness.
+- `total_score` must equal the sum of all 7 dimension scores (max 70).
 - `total_score` must equal the sum of all dimension scores.
 - `stats.bytes` may use K/M suffix (e.g. `"521K"`, `"1.2MB"`).
 - `ci_note` and `ci_quip` are `null` when `signals.has_ci` is `true`.
