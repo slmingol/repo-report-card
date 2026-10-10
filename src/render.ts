@@ -137,34 +137,53 @@ function markdownInline(s: string): string {
 
 function rubricToHtml(md: string): string {
     const lines = md.split('\n');
-    let out = '';
-    let inTable = false;
-    let tableRows = '';
-    let headerSeen = false;
+    const tableLines = lines.filter(l => l.trim().startsWith('|'));
+    const dataRows = tableLines.filter(l => !l.replace(/\|/g,'').trim().match(/^[-\s]+$/));
+    if (dataRows.length < 2) return `<pre style="font-size:12px;white-space:pre-wrap">${markdownInline(md)}</pre>`;
 
-    const flushTable = () => {
-        if (inTable) { out += `<table class="rubric-table">${tableRows}</tbody></table>`; inTable = false; tableRows = ''; headerSeen = false; }
-    };
+    const headers = dataRows[0].split('|').slice(1,-1).map(c => c.trim());
+    const scoreLabels = headers.slice(2);
+    const BANDS = [
+        { cls: 'b1', bg: 'rgba(239,68,68,.1)',  border: 'rgba(239,68,68,.3)',  lbl: '#ef4444', txt: '#ef4444' },
+        { cls: 'b2', bg: 'rgba(249,115,22,.1)', border: 'rgba(249,115,22,.3)', lbl: '#f97316', txt: '#f97316' },
+        { cls: 'b3', bg: 'rgba(234,179,8,.1)',  border: 'rgba(234,179,8,.3)',  lbl: '#ca8a04', txt: '#a16207' },
+        { cls: 'b4', bg: 'rgba(8,145,178,.1)',  border: 'rgba(8,145,178,.3)',  lbl: '#0891B2', txt: '#0e7490' },
+        { cls: 'b5', bg: 'rgba(34,197,94,.1)',  border: 'rgba(34,197,94,.3)',  lbl: '#16a34a', txt: '#15803d' },
+    ];
 
-    for (const line of lines) {
-        const t = line.trim();
-        if (!t) { flushTable(); continue; }
-        if (t.startsWith('## ')) { flushTable(); out += `<p class="rubric-section-head">${markdownInline(t.slice(3))}</p>`; continue; }
-        if (t.startsWith('- ') || t.startsWith('* ')) { flushTable(); out += `<p class="rubric-p">${markdownInline(t.slice(2))}</p>`; continue; }
-        if (t.startsWith('**') || (/^[A-Z]/.test(t) && !t.startsWith('|'))) { flushTable(); out += `<p class="rubric-p">${markdownInline(t)}</p>`; continue; }
-        if (t.startsWith('|')) {
-            const cells = t.split('|').slice(1, -1).map(c => c.trim());
-            if (cells.every(c => /^-+$/.test(c))) { tableRows += '</thead><tbody>'; headerSeen = true; continue; }
-            if (!inTable) { inTable = true; tableRows = '<thead>'; }
-            const tag = headerSeen ? 'td' : 'th';
-            tableRows += `<tr>${cells.map(c => `<${tag}>${markdownInline(c)}</${tag}>`).join('')}</tr>`;
-            continue;
-        }
-        flushTable();
-        out += `<p class="rubric-p">${markdownInline(t)}</p>`;
-    }
-    flushTable();
-    return out;
+    // calibration note
+    const calLine = lines.find(l => l.includes('Score calibration') || l.includes('Most hackathon'));
+    const calHtml = calLine ? `<div class="rdim-callout">${markdownInline(calLine.trim())}</div>` : '';
+
+    const dimCards = dataRows.slice(1).map((row, ri) => {
+        const cells = row.split('|').slice(1,-1).map(c => c.trim());
+        const name = cells[0].replace(/\*\*/g,'');
+        const sub  = cells[1] ?? '';
+        const bands = cells.slice(2);
+        const idx = ri % 7;
+        const ICONS = ['⬡','⬡','⬡','⬡','⬡','⬡','⬡'];
+        const COLORS = ['#818cf8','#34d399','#f472b6','#fb923c','#60a5fa','#a78bfa','#4ade80'];
+        const bandCards = bands.map((txt, i) => {
+            const b = BANDS[i] ?? BANDS[4];
+            const label = scoreLabels[i] ?? '';
+            return `<div style="background:${b.bg};border:1px solid ${b.border};border-radius:8px;padding:10px 11px;display:flex;flex-direction:column;gap:5px;min-width:0">
+  <span style="font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.06em;color:${b.lbl}">${escHtml(label)}</span>
+  <span style="font-size:11.5px;color:${b.txt};line-height:1.45;opacity:.9">${markdownInline(txt)}</span>
+</div>`;
+        }).join('');
+        return `<div class="rdim" style="--dim-color:${COLORS[idx]}">
+  <div class="rdim-head">
+    <div class="rdim-num">${ri+1}</div>
+    <div>
+      <div class="rdim-name">${escHtml(name)}</div>
+      <div class="rdim-sub">${markdownInline(sub)}</div>
+    </div>
+  </div>
+  <div class="rdim-bands">${bandCards}</div>
+</div>`;
+    }).join('');
+
+    return `${calHtml}<div class="rdim-list">${dimCards}</div>`;
 }
 
 function gradeFromScore(n: number): string {
@@ -767,32 +786,15 @@ body {
 .rubric-close { background: none; border: none; font-size: 20px; color: var(--fg-muted); cursor: pointer; padding: 0 4px; line-height: 1; }
 .rubric-close:hover { color: var(--fg); }
 .rubric-body { padding: 20px 24px; overflow-y: auto; }
-.rubric-section-head { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); margin: 20px 0 8px; }
-.rubric-section-head:first-child { margin-top: 0; }
-.rubric-p { font-size: 13px; color: var(--fg-muted); line-height: 1.6; margin: 0 0 8px; }
-.rubric-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; margin-block-end: 16px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-.rubric-table th { background: var(--surface-2); color: var(--fg-muted); font-weight: 700; text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--border); font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
-.rubric-table th:not(:last-child) { border-right: 1px solid var(--border); }
-.rubric-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; line-height: 1.5; font-size: 12px; }
-.rubric-table td:not(:last-child) { border-right: 1px solid var(--border); }
-.rubric-table tbody tr:last-child td { border-bottom: none; }
-.rubric-table tbody tr:hover td { background: color-mix(in srgb, var(--accent) 4%, transparent); }
-/* col 1: dimension name */
-.rubric-table th:nth-child(1) { width: 130px; }
-.rubric-table td:nth-child(1) { font-weight: 700; color: var(--fg); font-family: var(--font-head); font-size: 13px; white-space: nowrap; }
-/* col 2: what it measures */
-.rubric-table td:nth-child(2) { color: var(--fg-muted); font-style: italic; }
-/* score cols — colored headers + matching text tint */
-.rubric-table th:nth-child(3) { color: #ef4444; background: color-mix(in srgb, #ef4444 12%, var(--surface-2)); }
-.rubric-table th:nth-child(4) { color: #f97316; background: color-mix(in srgb, #f97316 12%, var(--surface-2)); }
-.rubric-table th:nth-child(5) { color: #eab308; background: color-mix(in srgb, #eab308 12%, var(--surface-2)); }
-.rubric-table th:nth-child(6) { color: #0891B2; background: color-mix(in srgb, #0891B2 12%, var(--surface-2)); }
-.rubric-table th:nth-child(7) { color: #22c55e; background: color-mix(in srgb, #22c55e 12%, var(--surface-2)); }
-.rubric-table td:nth-child(3) { color: #ef4444; opacity: .8; }
-.rubric-table td:nth-child(4) { color: #f97316; opacity: .85; }
-.rubric-table td:nth-child(5) { color: #ca8a04; }
-.rubric-table td:nth-child(6) { color: #0891B2; }
-.rubric-table td:nth-child(7) { color: #16a34a; font-weight: 500; }
+.rubric-callout { background: color-mix(in srgb, var(--accent) 8%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent); border-radius: 8px; padding: 12px 16px; font-size: 13px; color: var(--fg-muted); line-height: 1.6; margin-block-end: 20px; }
+.rdim-list { display: flex; flex-direction: column; gap: 2px; }
+.rdim { display: grid; grid-template-columns: 200px 1fr; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--border); align-items: start; }
+.rdim:last-child { border-bottom: none; }
+.rdim-head { display: flex; align-items: flex-start; gap: 12px; padding-right: 8px; }
+.rdim-num { width: 28px; height: 28px; border-radius: 50%; background: var(--dim-color, var(--accent)); color: #fff; font-family: var(--font-head); font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; opacity: .85; }
+.rdim-name { font-family: var(--font-head); font-size: 14px; font-weight: 700; color: var(--fg); line-height: 1.2; margin-bottom: 4px; }
+.rdim-sub { font-size: 11.5px; color: var(--fg-muted); font-style: italic; line-height: 1.4; }
+.rdim-bands { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
 @media (max-width: 700px) {
   :root { --sidebar-w: 0px; }
   .sidebar { display: none; }
