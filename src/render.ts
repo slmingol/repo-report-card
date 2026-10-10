@@ -1041,6 +1041,7 @@ function openScoreInTab(slug) {
     } catch(e) { return; }
   }
   window.open(url, '_blank', 'noopener');
+  window.focus();
 }
 
 function printActive() {
