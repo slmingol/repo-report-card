@@ -278,29 +278,29 @@ const SCORECARD_CSS = `
   --font-body: 'DM Sans', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Courier New', monospace;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg:        #080E18;
-    --surface:   #0F1826;
-    --surface-2: #162035;
-    --border:    #1F2E45;
-    --fg:        #E4EAF5;
-    --fg-muted:  #8897B4;
-    --fg-dim:    #4A5A75;
-    --accent:    #22D3EE;
-    --score:     #FBBF24;
-    --score-bg:  #1C1408;
-    --bar-track: #1F2E45;
-    --max:       #34D399;
-    --max-bg:    #062316;
-    --warn:      #F59E0B;
-    --warn-bg:   #1A1200;
-    --quip:      #A78BFA;
-    --quip-bg:   #13102A;
-    --quip-bdr:  #4C3D8A;
-    color-scheme: dark;
-  }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg:#080E18;--surface:#0F1826;--surface-2:#162035;--border:#1F2E45;
+    --fg:#E4EAF5;--fg-muted:#8897B4;--fg-dim:#4A5A75;--accent:#22D3EE;
+    --score:#FBBF24;--score-bg:#1C1408;--bar-track:#1F2E45;--max:#34D399;
+    --max-bg:#062316;--warn:#F59E0B;--warn-bg:#1A1200;--quip:#A78BFA;
+    --quip-bg:#13102A;--quip-bdr:#4C3D8A;color-scheme:dark;
+} }
+:root[data-theme="dark"] {
+    --bg:#080E18;--surface:#0F1826;--surface-2:#162035;--border:#1F2E45;
+    --fg:#E4EAF5;--fg-muted:#8897B4;--fg-dim:#4A5A75;--accent:#22D3EE;
+    --score:#FBBF24;--score-bg:#1C1408;--bar-track:#1F2E45;--max:#34D399;
+    --max-bg:#062316;--warn:#F59E0B;--warn-bg:#1A1200;--quip:#A78BFA;
+    --quip-bg:#13102A;--quip-bdr:#4C3D8A;color-scheme:dark;
 }
+:root[data-theme="light"] {
+    --bg:#FFFFFF;--surface:#FFFFFF;--surface-2:#F4F6FA;--border:#D8DDE8;
+    --fg:#0C1525;--fg-muted:#566079;--fg-dim:#8E97AA;--accent:#0891B2;
+    --score:#D97706;--score-bg:#FEF3C7;--bar-track:#D8DDE8;--max:#059669;
+    --max-bg:#D1FAE5;--warn:#B45309;--warn-bg:#FFFBEB;--quip:#7C3AED;
+    --quip-bg:#F5F3FF;--quip-bdr:#C4B5FD;color-scheme:light;
+}
+:root[data-theme="dark"] .skinner-img { mix-blend-mode: screen; filter: none; }
+:root[data-theme="light"] .skinner-img { mix-blend-mode: multiply; filter: contrast(1.1) brightness(0.92); }
 *, *::before, *::after { box-sizing: border-box; }
 body {
   font-family: var(--font-body);
@@ -330,7 +330,8 @@ body {
 .quip-label { font-family: var(--font-mono); font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--quip); white-space: nowrap; }
 .quip-text { font-size: 19px; font-style: italic; color: var(--fg-muted); line-height: 1.55; }
 .skinner-wrap { flex-shrink: 0; line-height: 0; }
-.skinner-img { height: 280px; width: auto; display: block; mix-blend-mode: screen; }
+.skinner-img { height: 280px; width: auto; display: block; mix-blend-mode: multiply; filter: contrast(1.1) brightness(0.92); }
+@media (prefers-color-scheme: dark) { .skinner-img { mix-blend-mode: screen; filter: none; } }
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-block-end: 20px; }
 .stat { background: var(--surface-2); border-radius: var(--r); padding: 12px 14px; text-align: center; }
 .stat .num { font-family: var(--font-head); font-size: 22px; font-weight: 800; color: var(--fg); font-variant-numeric: tabular-nums; line-height: 1.2; }
@@ -967,23 +968,26 @@ function applySearch(raw) {
 }
 search?.addEventListener('input', () => applySearch(search.value));
 
+function applyTheme(next) {
+  var root = document.documentElement;
+  root.setAttribute('data-theme', next);
+  var btn = document.getElementById('themeToggle');
+  if (btn) btn.textContent = next === 'dark' ? '☀' : '🌙';
+  document.querySelectorAll('iframe.scorecard-frame').forEach(function(f) {
+    try { f.contentDocument.documentElement.setAttribute('data-theme', next); } catch(e) {}
+  });
+  try { localStorage.setItem('rrc-theme', next); } catch(e) {}
+}
 function toggleTheme() {
   var root = document.documentElement;
   var cur = root.getAttribute('data-theme');
   var isDark = cur === 'dark' || (!cur && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  var next = isDark ? 'light' : 'dark';
-  root.setAttribute('data-theme', next);
-  document.getElementById('themeToggle').textContent = next === 'dark' ? '☀' : '🌙';
-  try { localStorage.setItem('rrc-theme', next); } catch(e) {}
+  applyTheme(isDark ? 'light' : 'dark');
 }
 (function() {
   try {
     var saved = localStorage.getItem('rrc-theme');
-    if (saved) {
-      document.documentElement.setAttribute('data-theme', saved);
-      var btn = document.getElementById('themeToggle');
-      if (btn) btn.textContent = saved === 'dark' ? '☀' : '🌙';
-    }
+    if (saved) { applyTheme(saved); }
   } catch(e) {}
 })();
 
