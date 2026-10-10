@@ -175,16 +175,17 @@ screenshot:
 	BASED="http://localhost:$(SHOT_PORT)/rrc-demo-dark.html"; \
 	OUT="media/screenshots"; \
 	printf "$(CY)▶$(R) Capturing light mode\n"; \
-	shot-scraper "$$BASE" -o "$$OUT/01-detail-view.png"      --width 1440 --height 900 --timeout 2000 2>/dev/null; \
+	RESIZE_JS="document.querySelectorAll('.scorecard-frame').forEach(function(f){var h=f.contentDocument&&f.contentDocument.body?f.contentDocument.body.scrollHeight:0;if(h>200)f.style.height=h+'px';});"; \
+	shot-scraper "$$BASE" -o "$$OUT/01-detail-view.png"      --width 1440 --height 900 --javascript "$$RESIZE_JS" --timeout 2000 2>/dev/null; \
 	shot-scraper "$$BASE" -o "$$OUT/02-overview-grid.png"    --width 1440 --height 900 --javascript "document.getElementById('overviewPanel').style.display='';document.getElementById('detailPanel').style.display='none';document.getElementById('btnOverview').classList.add('active');document.getElementById('btnDetail').classList.remove('active');" --timeout 2000 2>/dev/null; \
 	shot-scraper "$$BASE" -o "$$OUT/03-overview-list.png"    --width 1440 --height 900 --javascript "document.getElementById('overviewPanel').style.display='';document.getElementById('detailPanel').style.display='none';document.getElementById('btnOverview').classList.add('active');document.getElementById('btnDetail').classList.remove('active');document.getElementById('overviewGrid').style.display='none';document.getElementById('overviewList').style.display='';document.getElementById('btnOvList').classList.add('active');document.getElementById('btnOvGrid').classList.remove('active');" --timeout 2000 2>/dev/null; \
 	shot-scraper "$$BASE" -o "$$OUT/04-sidebar.png"          --width 1440 --height 900 --selector aside --timeout 2000 2>/dev/null; \
-	shot-scraper "$$BASE" -o "$$OUT/05-detail-dims.png"      --width 1440 --height 900 --javascript "window.scrollTo(0,800);" --timeout 2000 2>/dev/null; \
+	shot-scraper "$$BASE" -o "$$OUT/05-detail-dims.png"      --width 1440 --height 900 --javascript "$$RESIZE_JS window.scrollTo(0,800);" --timeout 2000 2>/dev/null; \
 	printf "$(CY)▶$(R) Capturing dark mode\n"; \
-	shot-scraper "$$BASED" -o "$$OUT/01-detail-view-dark.png"   --width 1440 --height 900 --wait-for "document.querySelector('iframe.scorecard-frame') !== null" --timeout 3000 2>/dev/null; \
+	shot-scraper "$$BASED" -o "$$OUT/01-detail-view-dark.png"   --width 1440 --height 900 --javascript "$$RESIZE_JS" --timeout 3000 2>/dev/null; \
 	shot-scraper "$$BASED" -o "$$OUT/02-overview-grid-dark.png" --width 1440 --height 900 --javascript "document.getElementById('overviewPanel').style.display='';document.getElementById('detailPanel').style.display='none';document.getElementById('btnOverview').classList.add('active');document.getElementById('btnDetail').classList.remove('active');" --timeout 3000 2>/dev/null; \
 	shot-scraper "$$BASED" -o "$$OUT/03-overview-list-dark.png" --width 1440 --height 900 --javascript "document.getElementById('overviewPanel').style.display='';document.getElementById('detailPanel').style.display='none';document.getElementById('btnOverview').classList.add('active');document.getElementById('btnDetail').classList.remove('active');document.getElementById('overviewGrid').style.display='none';document.getElementById('overviewList').style.display='';document.getElementById('btnOvList').classList.add('active');document.getElementById('btnOvGrid').classList.remove('active');" --timeout 3000 2>/dev/null; \
 	shot-scraper "$$BASED" -o "$$OUT/04-sidebar-dark.png"       --width 1440 --height 900 --selector aside --timeout 3000 2>/dev/null; \
-	shot-scraper "$$BASED" -o "$$OUT/05-detail-dims-dark.png"   --width 1440 --height 900 --javascript "window.scrollTo(0,800);" --timeout 3000 2>/dev/null; \
+	shot-scraper "$$BASED" -o "$$OUT/05-detail-dims-dark.png"   --width 1440 --height 900 --javascript "$$RESIZE_JS window.scrollTo(0,800);" --timeout 3000 2>/dev/null; \
 	kill $$SRV 2>/dev/null; \
 	printf "$(GR)✓$(R) 10 screenshots written to $(B)$$OUT/$(R)\n\n"
