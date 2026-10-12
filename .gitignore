@@ -5,6 +5,9 @@ out/
 *.log
 .vscode/
 *.zip
+# run directories
+runs/
+
 # output artifacts
 *-score.json
 !demo/*-score.json

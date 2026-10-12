@@ -14,7 +14,8 @@ RD := \033[31m
 SINCE      ?=
 BUDGET     ?= 300000
 TS         := $(shell date +%Y%m%d-%H%M%S)
-OUT        ?= hackathon-$(TS).html
+RUNDIR     ?= runs/$(TS)
+OUT        ?= $(RUNDIR)/hackathon.html
 REPO       ?=
 BRANCH     ?=
 EVENT      ?=
@@ -140,10 +141,12 @@ score-all: check $(REPOS_FILE)
 render:
 	@count=$$(ls *-score.json 2>/dev/null | wc -l | tr -d ' '); \
 	[ "$$count" -gt 0 ] || (printf "$(RD)error:$(R) no *-score.json files — run make score-all first\n" && exit 1); \
+	mkdir -p "$(RUNDIR)"; \
+	cp *-score.json "$(RUNDIR)/"; \
 	printf "\n$(CY)▶$(R) Stitching $(B)$$count$(R) score files  →  $(B)$(OUT)$(R)\n"; \
-	skinner-render *-score.json > "$(OUT)"; \
+	skinner-render "$(RUNDIR)"/*-score.json > "$(OUT)"; \
 	size=$$(du -sh "$(OUT)" | cut -f1); \
-	printf "$(GR)✓$(R) $(B)$(OUT)$(R)  $(D)$$size$(R)\n\n"
+	printf "$(GR)✓$(R) $(B)$(RUNDIR)/$(R)  [$$count score files + HTML  $(D)$$size$(R)]\n\n"
 
 # ── Full pipeline ──────────────────────────────────────────────────────────────
 full: score-all render
