@@ -767,12 +767,22 @@ function injectSkinnerScript(html: string, imgs: string[]): string {
 }
 
 function buildCombinedHtml(sections: Section[], skinnerImgs: string[], rubric: string): string {
+    const sortedByScore = [...sections].sort((a, b) => b.score - a.score);
+    const rankMap = new Map(sortedByScore.map((s, i) => [s.slug, i + 1]));
+    const lastRank = sections.length;
+
     const sidebarItems = sections.map(s => {
         const color = GRADE_COLOR[s.grade] ?? '#566079';
         const bg = GRADE_BG[s.grade] ?? '#F1F5F9';
-        return `<div class="team-item-wrap">
+        const rank = rankMap.get(s.slug) ?? 0;
+        const rankBadge = rank === 1
+            ? `<span class="rank-badge rank-first" title="1st place">🥇</span>`
+            : rank === lastRank
+                ? `<span class="rank-badge rank-last" title="Last place">🔻</span>`
+                : '';
+        return `<div class="team-item-wrap" data-score="${s.score}" data-name-key="${s.name.toLowerCase()}">
   <a class="team-item" href="#${s.slug}" data-name="${s.name.toLowerCase()}">
-    <span class="team-name">${escHtml(s.name)}</span>
+    <span class="team-name">${escHtml(s.name)}${rankBadge}</span>
     <span class="team-badges">
       <span class="grade-pill" style="background:${bg};color:${color}">${s.grade}</span>
       <span class="score-num">${s.score}<span class="denom">/70</span></span>
@@ -980,6 +990,11 @@ body {
 .search-clear { position: absolute; right: 6px; background: none; border: none; font-size: 11px; color: var(--fg-dim); cursor: pointer; padding: 0 2px; line-height: 1; }
 .search-clear:hover { color: var(--fg); }
 .search-count { font-family: var(--font-mono); font-size: 10px; color: var(--fg-dim); text-align: right; margin-block-start: 3px; min-height: 14px; }
+.sidebar-sort { display: flex; gap: 4px; margin-block-start: 6px; }
+.sort-btn { flex: 1; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; font-family: var(--font-mono); font-size: 9px; font-weight: 700; letter-spacing: .05em; color: var(--fg-dim); cursor: pointer; padding: 4px 0; transition: background .15s, color .15s; }
+.sort-btn:hover { background: var(--surface); color: var(--fg); }
+.sort-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.rank-badge { font-size: 11px; margin-inline-start: 4px; vertical-align: middle; line-height: 1; }
 .ov-list { display: flex; flex-direction: column; gap: 6px; }
 .ov-row { display: grid; grid-template-columns: 28px 70px 1fr 120px 28px; align-items: stretch; gap: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; color: inherit; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
 .ov-row:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(8,145,178,.12); }
@@ -1061,6 +1076,10 @@ body {
       <button class="search-clear" id="searchClear" onclick="clearSearch()" title="Clear search" style="display:none">✕</button>
     </div>
     <div class="search-count" id="searchCount"></div>
+    <div class="sidebar-sort">
+      <button class="sort-btn" id="sortBtnName" onclick="sortSidebar('name')" title="Sort A–Z">A–Z</button>
+      <button class="sort-btn active" id="sortBtnScore" onclick="sortSidebar('score')" title="Sort by score">Score ↓</button>
+    </div>
   </div>
   <nav class="team-list" id="teamList">
 ${sidebarItems}
@@ -1216,6 +1235,26 @@ function clearSearch() {
   applySearch('');
 }
 search?.addEventListener('input', () => applySearch(search.value));
+
+var sidebarSortMode = 'score';
+function sortSidebar(mode) {
+  sidebarSortMode = mode;
+  document.getElementById('sortBtnName')?.classList.toggle('active', mode === 'name');
+  document.getElementById('sortBtnScore')?.classList.toggle('active', mode === 'score');
+  var list = document.getElementById('teamList');
+  if (!list) return;
+  var wraps = Array.from(list.querySelectorAll('.team-item-wrap'));
+  wraps.sort(function(a, b) {
+    if (mode === 'score') {
+      return parseInt(b.dataset.score || '0') - parseInt(a.dataset.score || '0');
+    }
+    var na = a.dataset.nameKey || '', nb = b.dataset.nameKey || '';
+    return na < nb ? -1 : na > nb ? 1 : 0;
+  });
+  wraps.forEach(function(w) { list.appendChild(w); });
+}
+// Default: sort by score on load
+sortSidebar('score');
 
 function applyTheme(next) {
   var root = document.documentElement;

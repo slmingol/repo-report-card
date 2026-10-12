@@ -128,6 +128,22 @@ export async function repoContributors(ref: RepoRef): Promise<string[]> {
     }
 }
 
+// For branch-based submissions: query commits on the branch via GitHub API,
+// extract author logins directly (avoids email→login resolution issues).
+export async function branchContributors(ref: RepoRef, branch: string, since: Date | null): Promise<string[]> {
+    try {
+        const sinceParam = since ? `&since=${since.toISOString()}` : '';
+        const raw = await run('gh', [
+            'api',
+            `repos/${repoSpec(ref)}/commits?sha=${encodeURIComponent(branch)}&per_page=100${sinceParam}`,
+            '--jq', '[.[].author.login // empty] | unique | .[]',
+        ], { timeoutMs: 30_000 });
+        return raw.trim().split('\n').filter(login => login && !SERVICE_ACCOUNT.test(login));
+    } catch {
+        return [];
+    }
+}
+
 export function makeTempDir(): string {
     return fs.mkdtempSync(path.join(os.tmpdir(), 'principal-skinner-'));
 }
