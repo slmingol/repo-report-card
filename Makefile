@@ -13,7 +13,8 @@ RD := \033[31m
 # ── Config ────────────────────────────────────────────────────────────────────
 SINCE      ?=
 BUDGET     ?= 300000
-OUT        ?= hackathon.html
+TS         := $(shell date +%Y%m%d-%H%M%S)
+OUT        ?= hackathon-$(TS).html
 REPO       ?=
 BRANCH     ?=
 EVENT      ?=
