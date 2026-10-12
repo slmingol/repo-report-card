@@ -78,12 +78,20 @@ endif
 	@slug=$$(echo "$(REPO)" | sed 's|.*/||'); \
 	outfile="$$slug-score.json"; \
 	tmpfile=$$(mktemp); \
+	dossierfile=$$(mktemp); \
 	sed -n '/## Technical Complexity Rubric/,$$p' README.md > "$$tmpfile"; \
 	printf '%b' '$(_EVENT_NOTE)' >> "$$tmpfile"; \
 	printf '\n\nOutput ONLY a raw JSON object matching the schema in your system prompt. No prose, no markdown, no code fences. Raw JSON only, starting with { and ending with }.' >> "$$tmpfile"; \
-	principal-skinner "$(REPO)" $(_SINCE_ARG) $(_BRANCH_ARG) --budget $(BUDGET) \
-	  | claude -p "$$(cat $$tmpfile)" --allowedTools '' 2>/dev/null > "$$outfile"; \
-	rm -f "$$tmpfile"
+	principal-skinner "$(REPO)" $(_SINCE_ARG) $(_BRANCH_ARG) --budget $(BUDGET) > "$$dossierfile" 2>/dev/null; \
+	tmpout=$$(mktemp); \
+	claude -p "$$(cat $$tmpfile)" --allowedTools '' < "$$dossierfile" 2>/dev/null > "$$tmpout"; \
+	rc=$$?; rm -f "$$tmpfile" "$$dossierfile"; \
+	if [ $$rc -eq 0 ] && [ -s "$$tmpout" ]; then \
+	  mv "$$tmpout" "$$outfile"; \
+	else \
+	  rm -f "$$tmpout"; \
+	  printf "$(RD)error:$(R) claude produced no output for $(REPO)\n" >&2; exit 1; \
+	fi
 	@printf "$(GR)✓$(R) $(REPO) → $$(echo "$(REPO)" | sed 's|.*/||')-score.json\n\n"
 
 # ── Score all repos from file ─────────────────────────────────────────────────
@@ -105,14 +113,20 @@ score-all: check $(REPOS_FILE)
 	  repo="$$1"; rubric="$$2"; since_arg="$$3"; budget="$$4"; \
 	  slug=$$(echo "$$repo" | sed 's|.*/||'); \
 	  outfile="$$slug-score.json"; \
-	  if [ -f "$$outfile" ]; then \
+	  if [ -s "$$outfile" ]; then \
 	    printf "$(D)skip$(R) $$repo  $(D)($$outfile exists)$(R)\n"; return; \
 	  fi; \
+	  rm -f "$$outfile"; \
 	  printf "$(CY)▶$(R) $(B)$$repo$(R)\n"; \
-	  principal-skinner "$$repo" $$since_arg --budget "$$budget" \
-	    | claude -p "$$(cat $$rubric)" --allowedTools '' 2>/dev/null > "$$outfile" \
-	    && printf "$(GR)✓$(R) $$repo\n" \
-	    || printf "$(RD)✗$(R) $$repo $(RD)failed$(R)\n"; \
+	  dossierfile=$$(mktemp); tmpout=$$(mktemp); \
+	  principal-skinner "$$repo" $$since_arg --budget "$$budget" > "$$dossierfile" 2>/dev/null; \
+	  claude -p "$$(cat $$rubric)" --allowedTools '' < "$$dossierfile" 2>/dev/null > "$$tmpout"; \
+	  rc=$$?; rm -f "$$dossierfile"; \
+	  if [ $$rc -eq 0 ] && [ -s "$$tmpout" ]; then \
+	    mv "$$tmpout" "$$outfile" && printf "$(GR)✓$(R) $$repo\n"; \
+	  else \
+	    rm -f "$$tmpout" && printf "$(RD)✗$(R) $$repo $(RD)failed$(R)\n"; \
+	  fi; \
 	}; \
 	export -f _score; \
 	$(_REPOS) | xargs -P $(JOBS) -I{} \
