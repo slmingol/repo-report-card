@@ -11,3 +11,5 @@ out/
 *-scorecard.html
 results.html
 repos.txt
+*.html
+*.csv
