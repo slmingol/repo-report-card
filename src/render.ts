@@ -1400,8 +1400,10 @@ function exportCsv() {
     if (target) { setView('detail'); setTimeout(function() { target.scrollIntoView({ behavior: 'smooth' }); }, 100); }
   }
 })();
+var _navWrap = null;
 document.querySelectorAll('.team-item').forEach(function(a) {
   a.addEventListener('click', function(e) {
+    _navWrap = a.closest('.team-item-wrap');
     var href = a.getAttribute('href');
     if (href && href.startsWith('#')) {
       try { history.replaceState(null, '', '?team=' + href.slice(1)); } catch(e) {}
@@ -1414,8 +1416,6 @@ document.querySelectorAll('.team-item').forEach(function(a) {
     }
   });
 });
-
-var _navWrap = null;
 document.addEventListener('keydown', function(e) {
   if (e.target.closest('input,textarea,[contenteditable]')) return;
   if (e.key === 'Escape') { document.getElementById('rubricOverlay').classList.remove('open'); return; }
