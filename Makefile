@@ -15,11 +15,13 @@ SINCE      ?=
 BUDGET     ?= 300000
 OUT        ?= hackathon.html
 REPO       ?=
+BRANCH     ?=
 EVENT      ?=
 REPOS_FILE ?= repos.txt
 JOBS       ?= 1
 
 _SINCE_ARG  = $(if $(SINCE),--since $(SINCE),)
+_BRANCH_ARG = $(if $(BRANCH),--branch $(BRANCH),)
 _EVENT_NOTE = $(if $(EVENT),\n\nThe event name is "$(EVENT)". Use this exact string for the `event` field in the JSON.,)
 _REPOS      = grep -v '^\s*\#\|^\s*$$' $(REPOS_FILE)
 
@@ -31,7 +33,7 @@ help:
 	@printf "\n$(B)$(MG)⚖  Principal Skinner$(R) — Hackathon Judging Pipeline\n"
 	@printf "$(D)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(R)\n\n"
 	@printf " $(B)Targets$(R)\n"
-	@printf "  $(CY)make score$(R)       Score one repo    $(D)REPO=owner/repo [SINCE=YYYY-MM-DD]$(R)\n"
+	@printf "  $(CY)make score$(R)       Score one repo    $(D)REPO=owner/repo [SINCE=YYYY-MM-DD] [BRANCH=name]$(R)\n"
 	@printf "  $(CY)make score-all$(R)   Score all repos   $(D)REPOS_FILE=$(REPOS_FILE) [SINCE=…] [JOBS=$(JOBS)]$(R)\n"
 	@printf "  $(CY)make render$(R)      Stitch *-score.json  →  $(OUT)\n"
 	@printf "  $(CY)make full$(R)        score-all + render (full pipeline)\n"
@@ -43,6 +45,7 @@ help:
 	@printf "  $(CY)make screenshot$(R)  Refresh README screenshots from demo data\n"
 	@printf "\n $(B)Variables$(R)\n"
 	@printf "  $(YL)SINCE$(R)=$(D)YYYY-MM-DD$(R)      Hackathon start date (commit window filter)\n"
+	@printf "  $(YL)BRANCH$(R)=$(D)name$(R)           Clone specific branch (for branch-only repos)\n"
 	@printf "  $(YL)BUDGET$(R)=$(D)$(BUDGET)$(R)         Max source chars sampled per repo\n"
 	@printf "  $(YL)REPOS_FILE$(R)=$(D)$(REPOS_FILE)$(R)   Repo list file\n"
 	@printf "  $(YL)JOBS$(R)=$(D)$(JOBS)$(R)              Parallel scoring jobs\n"
@@ -71,14 +74,14 @@ ifeq ($(strip $(REPO)),)
 	@printf "$(RD)error:$(R) REPO is required\n"
 	@printf "  usage: $(D)make score REPO=owner/repo [SINCE=YYYY-MM-DD]$(R)\n" && exit 1
 endif
-	@printf "\n$(CY)▶$(R) $(B)$(REPO)$(R)$(if $(SINCE),  $(D)since $(SINCE)$(R),)\n"
+	@printf "\n$(CY)▶$(R) $(B)$(REPO)$(R)$(if $(BRANCH),@$(BRANCH),)$(if $(SINCE),  $(D)since $(SINCE)$(R),)\n"
 	@slug=$$(echo "$(REPO)" | sed 's|.*/||'); \
 	outfile="$$slug-score.json"; \
 	tmpfile=$$(mktemp); \
 	sed -n '/## Technical Complexity Rubric/,$$p' README.md > "$$tmpfile"; \
 	printf '%b' '$(_EVENT_NOTE)' >> "$$tmpfile"; \
 	printf '\n\nOutput ONLY a raw JSON object matching the schema in your system prompt. No prose, no markdown, no code fences. Raw JSON only, starting with { and ending with }.' >> "$$tmpfile"; \
-	principal-skinner "$(REPO)" $(_SINCE_ARG) --budget $(BUDGET) \
+	principal-skinner "$(REPO)" $(_SINCE_ARG) $(_BRANCH_ARG) --budget $(BUDGET) \
 	  | claude -p "$$(cat $$tmpfile)" --allowedTools '' 2>/dev/null > "$$outfile"; \
 	rm -f "$$tmpfile"
 	@printf "$(GR)✓$(R) $(REPO) → $$(echo "$(REPO)" | sed 's|.*/||')-score.json\n\n"

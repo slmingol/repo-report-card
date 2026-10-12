@@ -6,13 +6,14 @@ import { extractSignals } from './signals';
 
 const DEFAULT_BUDGET = 300_000;
 
-const USAGE = `Usage: principal-skinner <owner/repo | github url> [--since YYYY-MM-DD] [--budget ${DEFAULT_BUDGET}]
+const USAGE = `Usage: principal-skinner <owner/repo | github url> [--since YYYY-MM-DD] [--budget ${DEFAULT_BUDGET}] [--branch <name>]
 
 Clones a repo with your authenticated gh CLI and prints a JSON dossier to stdout.
 
 Options:
   --since YYYY-MM-DD   Only count commits authored on/after this date (UTC midnight)
   --budget N           Max characters of source samples (default ${DEFAULT_BUDGET})
+  --branch <name>      Clone a specific branch instead of the default
   -h, --help           Show this help`;
 
 class UsageError extends Error {}
@@ -21,12 +22,14 @@ interface Args {
     repo: string;
     since: Date | null;
     budget: number;
+    branch: string | undefined;
 }
 
 function parseArgs(argv: string[]): Args {
     let repo: string | undefined;
     let since: Date | null = null;
     let budget = DEFAULT_BUDGET;
+    let branch: string | undefined;
 
     for (let i = 0; i < argv.length; i++) {
         const a = argv[i];
@@ -51,6 +54,8 @@ function parseArgs(argv: string[]): Args {
             const v = value();
             if (!/^\d+$/.test(v) || Number(v) < 1000) throw new UsageError(`--budget must be an integer >= 1000, got: ${v}`);
             budget = Number(v);
+        } else if (flag === '--branch') {
+            branch = value();
         } else if (a.startsWith('-')) {
             throw new UsageError(`unknown option: ${a}`);
         } else if (repo === undefined) {
@@ -61,7 +66,7 @@ function parseArgs(argv: string[]): Args {
     }
 
     if (!repo) throw new UsageError('missing <owner/repo | github url>');
-    return { repo, since, budget };
+    return { repo, since, budget, branch };
 }
 
 const log = (msg: string) => process.stderr.write(`[skinner] ${msg}\n`);
@@ -86,7 +91,7 @@ async function main(): Promise<void> {
 
     try {
         log('cloning');
-        await cloneRepo(ref, dir);
+        await cloneRepo(ref, dir, args.branch);
         log('reading history');
         const activity = await commitStats(dir, args.since);
         log('walking files');

@@ -136,10 +136,12 @@ export function removeDir(dir: string): void {
     fs.rmSync(dir, { recursive: true, force: true });
 }
 
-export async function cloneRepo(ref: RepoRef, dest: string): Promise<void> {
+export async function cloneRepo(ref: RepoRef, dest: string, branch?: string): Promise<void> {
+    const gitArgs = ['--filter=tree:0', '--single-branch', '--no-tags', '--quiet'];
+    if (branch) gitArgs.push('--branch', branch);
     await run(
         'gh',
-        ['repo', 'clone', repoSpec(ref), dest, '--no-upstream', '--', '--filter=tree:0', '--single-branch', '--no-tags', '--quiet'],
+        ['repo', 'clone', repoSpec(ref), dest, '--no-upstream', '--', ...gitArgs],
         { timeoutMs: 600_000 },
     );
 }
