@@ -1415,6 +1415,7 @@ document.querySelectorAll('.team-item').forEach(function(a) {
   });
 });
 
+var _navWrap = null;
 document.addEventListener('keydown', function(e) {
   if (e.target.closest('input,textarea,[contenteditable]')) return;
   if (e.key === 'Escape') { document.getElementById('rubricOverlay').classList.remove('open'); return; }
@@ -1423,12 +1424,16 @@ document.addEventListener('keydown', function(e) {
   if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
   e.preventDefault();
   var wraps = Array.from(document.querySelectorAll('.team-item-wrap')).filter(function(w) { return w.style.display !== 'none'; });
-  var active = document.querySelector('.team-item.active');
-  var idx = active ? wraps.findIndex(function(w) { return w.contains(active); }) : -1;
+  var idx = _navWrap ? wraps.indexOf(_navWrap) : -1;
+  if (idx < 0) {
+    var active = document.querySelector('.team-item.active');
+    idx = active ? wraps.findIndex(function(w) { return w.contains(active); }) : -1;
+  }
   var next = e.key === 'ArrowDown' ? Math.min(idx + 1, wraps.length - 1) : Math.max(idx - 1, 0);
   if (idx < 0) next = 0;
-  var link = wraps[next] && wraps[next].querySelector('.team-item');
-  if (link) link.click();
+  _navWrap = wraps[next] || null;
+  var link = _navWrap && _navWrap.querySelector('.team-item');
+  if (link) { link.click(); _navWrap.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
 });
 </script>
 </body>
