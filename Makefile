@@ -28,7 +28,7 @@ _EVENT_NOTE = $(if $(EVENT),\n\nThe event name is "$(EVENT)". Use this exact str
 _REPOS      = grep -v '^\s*\#\|^\s*$$' $(REPOS_FILE)
 
 .DEFAULT_GOAL := help
-.PHONY: help check score score-all render full open list clean clean-all screenshot
+.PHONY: help check score score-all render full open list clean clean-all clean-runs screenshot
 
 # ── Help ──────────────────────────────────────────────────────────────────────
 help:
@@ -191,6 +191,16 @@ clean-all: clean
 	@[ -f "$(OUT)" ] \
 	  && (printf "$(YL)→$(R) Removing $(B)$(OUT)$(R)\n"; rm -f "$(OUT)") \
 	  || true
+
+clean-runs:
+	@latest=$$(ls -dt runs/*/ 2>/dev/null | head -1); \
+	[ -n "$$latest" ] || (printf "$(D)no runs/ to clean$(R)\n" && exit 0); \
+	old=$$(ls -dt runs/*/ 2>/dev/null | tail -n +2); \
+	[ -n "$$old" ] || (printf "$(D)only one run — nothing to remove$(R)\n" && exit 0); \
+	count=$$(echo "$$old" | wc -l | tr -d ' '); \
+	printf "$(YL)→$(R) Keeping $(B)$$latest$(R)\n"; \
+	printf "$(YL)→$(R) Removing $(B)$$count$(R) older run(s)\n"; \
+	echo "$$old" | xargs rm -rf
 
 # ── Screenshots ────────────────────────────────────────────────────────────────
 SHOT_PORT ?= 8742
