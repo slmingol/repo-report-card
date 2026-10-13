@@ -142,7 +142,7 @@ render:
 	@count=$$(ls *-score.json 2>/dev/null | wc -l | tr -d ' '); \
 	[ "$$count" -gt 0 ] || (printf "$(RD)error:$(R) no *-score.json files — run make score-all first\n" && exit 1); \
 	mkdir -p "$(RUNDIR)"; \
-	cp *-score.json "$(RUNDIR)/"; \
+	mv *-score.json "$(RUNDIR)/"; \
 	printf "\n$(CY)▶$(R) Stitching $(B)$$count$(R) score files  →  $(B)$(OUT)$(R)\n"; \
 	skinner-render "$(RUNDIR)"/*-score.json > "$(OUT)"; \
 	size=$$(du -sh "$(OUT)" | cut -f1); \
