@@ -160,8 +160,8 @@ render:
 	  [ -n "$$srcdir" ] || (printf "$(RD)error:$(R) no score files in root or runs/ — run make score-all first\n" && exit 1); \
 	  printf "$(D)no new scores in root — re-rendering from $$srcdir$(R)\n"; \
 	fi; \
-	count=$$(ls "$$srcdir"*-score.json 2>/dev/null | wc -l | tr -d ' '); \
 	srcdir=$${srcdir%/}; \
+	count=$$(ls "$$srcdir"/*-score.json 2>/dev/null | wc -l | tr -d ' '); \
 	outfile="$$srcdir/hackathon-$(TS).html"; \
 	printf "\n$(CY)▶$(R) Stitching $(B)$$count$(R) score files  →  $(B)$$outfile$(R)\n"; \
 	skinner-render "$$srcdir"/*-score.json > "$$outfile"; \
