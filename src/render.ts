@@ -1433,7 +1433,12 @@ document.addEventListener('keydown', function(e) {
   if (idx < 0) next = 0;
   _navWrap = wraps[next] || null;
   var link = _navWrap && _navWrap.querySelector('.team-item');
-  if (link) { link.click(); _navWrap.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+  if (link) {
+    document.querySelectorAll('.team-item').forEach(function(a) { a.classList.remove('active'); });
+    link.classList.add('active');
+    link.click();
+    _navWrap.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
 });
 </script>
 </body>
