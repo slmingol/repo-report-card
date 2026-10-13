@@ -164,10 +164,11 @@ full: score-all render
 
 # ── Open in browser ────────────────────────────────────────────────────────────
 open:
-	@[ -f "$(OUT)" ] || (printf "$(RD)error:$(R) $(OUT) not found — run make render\n" && exit 1)
-	@printf "$(CY)▶$(R) Opening $(B)$(OUT)$(R)\n"
-	@open "$(OUT)" 2>/dev/null || xdg-open "$(OUT)" 2>/dev/null || \
-	  printf "$(YL)!$(R) Cannot auto-open — open $(OUT) manually\n"
+	@latest=$$(ls -t runs/*/hackathon-*.html 2>/dev/null | head -1); \
+	[ -n "$$latest" ] || (printf "$(RD)error:$(R) no rendered HTML found — run make render\n" && exit 1); \
+	printf "$(CY)▶$(R) Opening $(B)$$latest$(R)\n"; \
+	open "$$latest" 2>/dev/null || xdg-open "$$latest" 2>/dev/null || \
+	  printf "$(YL)!$(R) Cannot auto-open — open $$latest manually\n"
 
 # ── List scorecards ────────────────────────────────────────────────────────────
 list:
