@@ -46,10 +46,10 @@ cd repo-report-card && npm install && npm link
 echo "acme/hack-alpha\nacme/hack-beta" > repos.txt
 
 # 3. Score + render
-make full SINCE=2026-10-08 EVENT="Acme Hackathon 2026" OUT=results.html JOBS=4
+make full SINCE=2026-10-08 EVENT="Acme Hackathon 2026" JOBS=4
 
 # 4. Open
-make open OUT=results.html
+make open
 ```
 
 **Requirements:** Node 20+, [`gh`](https://cli.github.com/) authenticated, `git`, `claude` (Claude Code CLI)
@@ -114,8 +114,9 @@ make open OUT=results.html
 Collects facts about a GitHub repo into a bounded JSON evidence pack. No scoring.
 
 ```bash
-principal-skinner <owner/repo | url> [--since YYYY-MM-DD] [--budget 300000]
+principal-skinner <owner/repo | url> [--since YYYY-MM-DD] [--budget 300000] [--branch <name>]
 principal-skinner acme/hack-project --since 2026-10-01 > dossier.json
+principal-skinner acme/monorepo --branch hackathon-2026 --since 2026-10-01 > dossier.json
 ```
 
 | Flag | Default | Description |
@@ -123,6 +124,7 @@ principal-skinner acme/hack-project --since 2026-10-01 > dossier.json
 | `<repo>` | required | `owner/repo`, full GitHub URL, or `HOST/owner/repo` for GHE |
 | `--since` | none | Only count commits on or after this date (UTC midnight) |
 | `--budget` | `300000` | Max characters of source samples |
+| `--branch` | none | Clone and score a specific branch (for branch-only submissions) |
 
 <details>
 <summary>JSON output shape</summary>
@@ -156,7 +158,7 @@ Stitches `*-score.json` files into a single self-contained HTML file.
 skinner-render *-score.json > results.html
 ```
 
-**UI features:** sidebar with search + grade legend + light/dark toggle, Detail view (iframes per team), Overview grid + list, open-in-tab (↗) on every card, Print Active Team / Print All Teams.
+**UI features:** sidebar with search, sort (Score ↓ / A–Z), grade legend, rank badges (1st/last), light/dark toggle, keyboard navigation (↑↓ arrows), Detail view (iframes per team), Overview grid + list, open-in-tab (↗) on every card, Print Active Team / Print All Teams.
 
 ---
 
@@ -168,13 +170,14 @@ make full SINCE=2026-10-08 EVENT="Acme Hackathon 2026" OUT=results.html JOBS=4
 
 | Target | Description |
 |---|---|
-| `make score` | Score one repo — `REPO=owner/repo` |
+| `make score` | Score one repo — `REPO=owner/repo [BRANCH=name]` |
 | `make score-all` | Score all repos in `REPOS_FILE` in parallel (`JOBS=N`) |
-| `make render` | Stitch `*-score.json` → `OUT` |
+| `make render` | Move `*-score.json` → `runs/YYYYMMDD-HHMMSS/`, render HTML there; re-renders from latest run if root is empty |
 | `make full` | score-all + render |
-| `make open` | Open `OUT` in browser |
-| `make clean` | Remove `*-score.json` files |
-| `make clean-all` | Remove score files + `OUT` |
+| `make open` | Open latest HTML from `runs/` in browser |
+| `make clean` | Remove `*-score.json` files from root |
+| `make clean-all` | Remove score files + current `OUT` |
+| `make clean-runs` | Delete all run dirs except the latest |
 | `make check` | Verify required tools are on PATH |
 | `make screenshot` | Refresh `media/screenshots/` from demo data (requires `shot-scraper`) |
 
@@ -216,15 +219,24 @@ Scoring 3 repos  since 2026-10-08  jobs=3
 
 **`make render` — stitch existing score files into HTML**
 ```
-$ make render OUT=results.html
+$ make render EVENT="Acme Hackathon 2026"
 
-▶ Stitching 3 score files  →  results.html
-✓ results.html  (148K)
+▶ Stitching 3 score files  →  runs/20261008-143012/hackathon-20261008-143012.html
+✓ runs/20261008-143012  [3 score files + HTML  148K]
+```
+
+Re-running `make render` when root is empty re-renders from the latest run dir:
+```
+$ make render EVENT="Acme Hackathon 2026"
+
+no new scores in root — re-rendering from runs/20261008-143012/
+▶ Stitching 3 score files  →  runs/20261008-143012/hackathon-20261008-143021.html
+✓ runs/20261008-143012  [3 score files + HTML  148K]
 ```
 
 **`make full` — score all + render in one shot**
 ```
-$ make full SINCE=2026-10-08 EVENT="Acme Hackathon 2026" OUT=results.html JOBS=3
+$ make full SINCE=2026-10-08 EVENT="Acme Hackathon 2026" JOBS=3
 
 Scoring 3 repos  since 2026-10-08  jobs=3
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -232,8 +244,8 @@ Scoring 3 repos  since 2026-10-08  jobs=3
   ✓ acme-hack-conduit-score.json      (54/70 · B)
   ✓ acme-hack-vaultkeeper-score.json  (46/70 · C)
 
-▶ Stitching 3 score files  →  results.html
-✓ results.html  (148K)
+▶ Stitching 3 score files  →  runs/20261008-143012/hackathon-20261008-143012.html
+✓ runs/20261008-143012  [3 score files + HTML  148K]
 
 Pipeline complete.  Run make open to view.
 ```
@@ -249,14 +261,14 @@ Score files  (3 files)
   ✓  acme-hack-vaultkeeper-score.json           6.8K
 ```
 
-**`make clean` / `make clean-all`**
+**`make clean` / `make clean-all` / `make clean-runs`**
 ```
 $ make clean
 → Removing 3 score file(s)
 
-$ make clean-all OUT=results.html
-→ Removing 3 score file(s)
-→ Removing results.html
+$ make clean-runs
+→ Keeping runs/20261008-143012/
+→ Removing 2 older run(s)
 ```
 
 <details>
@@ -274,17 +286,25 @@ make score-all \
   JOBS=4
 
 # Render from existing score files
-make render OUT=results.html
+make render EVENT="Acme Internal Hackathon 2026"
 
 # Full pipeline
 make full \
   SINCE=2026-10-08 \
   EVENT="Acme Internal Hackathon 2026" \
-  OUT=results.html \
   JOBS=4
 
-# Wipe and redo
-make clean-all OUT=results.html && make full SINCE=2026-10-08 JOBS=4
+# Score a branch-only submission
+make score REPO=acme/monorepo BRANCH=hackathon-2026 SINCE=2026-10-08
+
+# Open latest render
+make open
+
+# Prune old run dirs, keep latest
+make clean-runs
+
+# Wipe scores and redo
+make clean && make full SINCE=2026-10-08 JOBS=4
 ```
 </details>
 
