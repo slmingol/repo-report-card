@@ -139,14 +139,24 @@ score-all: check $(REPOS_FILE)
 
 # ── Render combined HTML ───────────────────────────────────────────────────────
 render:
-	@count=$$(ls *-score.json 2>/dev/null | wc -l | tr -d ' '); \
-	[ "$$count" -gt 0 ] || (printf "$(RD)error:$(R) no *-score.json files — run make score-all first\n" && exit 1); \
-	mkdir -p "$(RUNDIR)"; \
-	mv *-score.json "$(RUNDIR)/"; \
-	printf "\n$(CY)▶$(R) Stitching $(B)$$count$(R) score files  →  $(B)$(OUT)$(R)\n"; \
-	skinner-render "$(RUNDIR)"/*-score.json > "$(OUT)"; \
-	size=$$(du -sh "$(OUT)" | cut -f1); \
-	printf "$(GR)✓$(R) $(B)$(RUNDIR)/$(R)  [$$count score files + HTML  $(D)$$size$(R)]\n\n"
+	@root_count=$$(ls *-score.json 2>/dev/null | wc -l | tr -d ' '); \
+	if [ "$$root_count" -gt 0 ]; then \
+	  srcdir="."; \
+	  mkdir -p "$(RUNDIR)"; \
+	  mv *-score.json "$(RUNDIR)/"; \
+	  srcdir="$(RUNDIR)"; \
+	else \
+	  srcdir=$$(ls -dt runs/*/ 2>/dev/null | head -1); \
+	  [ -n "$$srcdir" ] || (printf "$(RD)error:$(R) no score files in root or runs/ — run make score-all first\n" && exit 1); \
+	  printf "$(D)no new scores in root — re-rendering from $$srcdir$(R)\n"; \
+	fi; \
+	count=$$(ls "$$srcdir"*-score.json 2>/dev/null | wc -l | tr -d ' '); \
+	srcdir=$${srcdir%/}; \
+	outfile="$$srcdir/hackathon-$(TS).html"; \
+	printf "\n$(CY)▶$(R) Stitching $(B)$$count$(R) score files  →  $(B)$$outfile$(R)\n"; \
+	skinner-render "$$srcdir"/*-score.json > "$$outfile"; \
+	size=$$(du -sh "$$outfile" | cut -f1); \
+	printf "$(GR)✓$(R) $(B)$$srcdir$(R)  [$$count score files + HTML  $(D)$$size$(R)]\n\n"
 
 # ── Full pipeline ──────────────────────────────────────────────────────────────
 full: score-all render
