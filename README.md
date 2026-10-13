@@ -172,7 +172,7 @@ make full SINCE=2026-10-08 EVENT="Acme Hackathon 2026" OUT=results.html JOBS=4
 |---|---|
 | `make score` | Score one repo — `REPO=owner/repo [BRANCH=name]` |
 | `make score-all` | Score all repos in `REPOS_FILE` in parallel (`JOBS=N`) |
-| `make render` | Move `*-score.json` → `runs/YYYYMMDD-HHMMSS/`, render HTML there; re-renders from latest run if root is empty |
+| `make render` | Move `*-score.json` → `runs/YYYYMMDD-HHMMSS/`, render HTML there; if root has new scores and a prior run exists, merges both before rendering; re-renders from latest run if root is empty |
 | `make full` | score-all + render |
 | `make open` | Open latest HTML from `runs/` in browser |
 | `make clean` | Remove `*-score.json` files from root |
@@ -223,6 +223,15 @@ $ make render EVENT="Acme Hackathon 2026"
 
 ▶ Stitching 3 score files  →  runs/20261008-143012/hackathon-20261008-143012.html
 ✓ runs/20261008-143012  [3 score files + HTML  148K]
+```
+
+Adding new scores to an existing run (merges with previous run's scores):
+```
+$ make render EVENT="Acme Hackathon 2026"
+
+merging 2 root score(s) with 3 from runs/20261008-143012/
+▶ Stitching 5 score files  →  runs/20261008-150001/hackathon-20261008-150001.html
+✓ runs/20261008-150001  [5 score files + HTML  210K]
 ```
 
 Re-running `make render` when root is empty re-renders from the latest run dir:
