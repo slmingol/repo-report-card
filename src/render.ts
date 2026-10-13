@@ -1341,8 +1341,10 @@ document.querySelectorAll('iframe.scorecard-frame').forEach(function(f) {
   f.addEventListener('load', applyTheme);
 });
 
+var _navLock = false, _navLockTimer = null;
 const sections = document.querySelectorAll('.team-section');
 const observer = new IntersectionObserver(entries => {
+  if (_navLock) return;
   entries.forEach(e => {
     if (e.isIntersecting) {
       const id = e.target.id;
@@ -1436,6 +1438,9 @@ document.addEventListener('keydown', function(e) {
   if (link) {
     document.querySelectorAll('.team-item').forEach(function(a) { a.classList.remove('active'); });
     link.classList.add('active');
+    _navLock = true;
+    clearTimeout(_navLockTimer);
+    _navLockTimer = setTimeout(function() { _navLock = false; }, 600);
     link.click();
     _navWrap.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }
