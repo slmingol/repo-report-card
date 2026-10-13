@@ -141,7 +141,17 @@ score-all: check $(REPOS_FILE)
 render:
 	@root_count=$$(ls *-score.json 2>/dev/null | wc -l | tr -d ' '); \
 	if [ "$$root_count" -gt 0 ]; then \
-	  srcdir="."; \
+	  prev=$$(ls -dt runs/*/ 2>/dev/null | head -1); \
+	  if [ -n "$$prev" ]; then \
+	    prev=$${prev%/}; \
+	    new_count=0; \
+	    for f in *-score.json; do \
+	      [ -f "$$prev/$$f" ] || new_count=$$((new_count+1)); \
+	    done; \
+	    existing=$$(ls "$$prev"/*-score.json 2>/dev/null | wc -l | tr -d ' '); \
+	    printf "$(D)merging $$root_count root score(s) with $$existing from $$prev$(R)\n"; \
+	    cp "$$prev"/*-score.json . 2>/dev/null || true; \
+	  fi; \
 	  mkdir -p "$(RUNDIR)"; \
 	  mv *-score.json "$(RUNDIR)/"; \
 	  srcdir="$(RUNDIR)"; \
