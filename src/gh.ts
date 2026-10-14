@@ -130,12 +130,13 @@ export async function repoContributors(ref: RepoRef): Promise<string[]> {
 
 // For branch-based submissions: query commits on the branch via GitHub API,
 // extract author logins directly (avoids email→login resolution issues).
-export async function branchContributors(ref: RepoRef, branch: string, since: Date | null): Promise<string[]> {
+export async function branchContributors(ref: RepoRef, branch: string, since: Date | null, subdir?: string): Promise<string[]> {
     try {
         const sinceParam = since ? `&since=${since.toISOString()}` : '';
+        const pathParam = subdir ? `&path=${encodeURIComponent(subdir)}` : '';
         const raw = await run('gh', [
             'api',
-            `repos/${repoSpec(ref)}/commits?sha=${encodeURIComponent(branch)}&per_page=100${sinceParam}`,
+            `repos/${repoSpec(ref)}/commits?sha=${encodeURIComponent(branch)}&per_page=100${sinceParam}${pathParam}`,
             '--jq', '[.[].author.login // empty] | unique | .[]',
         ], { timeoutMs: 30_000 });
         return raw.trim().split('\n').filter(login => login && !SERVICE_ACCOUNT.test(login));
@@ -181,10 +182,12 @@ async function hasCommits(dir: string): Promise<boolean> {
     }
 }
 
-export async function commitStats(dir: string, since: Date | null): Promise<Activity> {
+export async function commitStats(dir: string, since: Date | null, subdir?: string): Promise<Activity> {
     let out = '';
     if (await hasCommits(dir)) {
-        out = await run('git', ['log', '--format=%aI%x09%ae'], { cwd: dir, timeoutMs: 300_000 });
+        const logArgs = ['log', '--format=%aI%x09%ae'];
+        if (subdir) logArgs.push('--', subdir);
+        out = await run('git', logArgs, { cwd: dir, timeoutMs: 300_000 });
     }
 
     const all = out

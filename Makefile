@@ -18,12 +18,14 @@ RUNDIR     ?= runs/$(TS)
 OUT        ?= $(RUNDIR)/hackathon.html
 REPO       ?=
 BRANCH     ?=
+SUBDIR     ?=
 EVENT      ?=
 REPOS_FILE ?= repos.txt
 JOBS       ?= 1
 
 _SINCE_ARG  = $(if $(SINCE),--since $(SINCE),)
 _BRANCH_ARG = $(if $(BRANCH),--branch $(BRANCH),)
+_SUBDIR_ARG = $(if $(SUBDIR),--subdir $(SUBDIR),)
 _EVENT_NOTE = $(if $(EVENT),\n\nThe event name is "$(EVENT)". Use this exact string for the `event` field in the JSON.,)
 _REPOS      = grep -v '^\s*\#\|^\s*$$' $(REPOS_FILE)
 
@@ -84,7 +86,7 @@ endif
 	sed -n '/## Technical Complexity Rubric/,$$p' README.md > "$$tmpfile"; \
 	printf '%b' '$(_EVENT_NOTE)' >> "$$tmpfile"; \
 	printf '\n\nOutput ONLY a raw JSON object matching the schema in your system prompt. No prose, no markdown, no code fences. Raw JSON only, starting with { and ending with }.' >> "$$tmpfile"; \
-	principal-skinner "$(REPO)" $(_SINCE_ARG) $(_BRANCH_ARG) --budget $(BUDGET) > "$$dossierfile" 2>/dev/null; \
+	principal-skinner "$(REPO)" $(_SINCE_ARG) $(_BRANCH_ARG) $(_SUBDIR_ARG) --budget $(BUDGET) > "$$dossierfile" 2>/dev/null; \
 	tmpout=$$(mktemp); \
 	claude -p "$$(cat $$tmpfile)" --allowedTools '' < "$$dossierfile" 2>/dev/null > "$$tmpout"; \
 	rc=$$?; rm -f "$$tmpfile" "$$dossierfile"; \

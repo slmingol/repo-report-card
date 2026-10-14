@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import * as path from 'path';
 import { CliError, branchContributors, cloneRepo, commitStats, ensureGh, makeTempDir, parseRepo, removeDir, repoContributors, repoView } from './gh';
 import { summarize, walk } from './inventory';
 import { selectSamples } from './select';
@@ -6,7 +7,7 @@ import { extractSignals } from './signals';
 
 const DEFAULT_BUDGET = 300_000;
 
-const USAGE = `Usage: principal-skinner <owner/repo | github url> [--since YYYY-MM-DD] [--budget ${DEFAULT_BUDGET}] [--branch <name>]
+const USAGE = `Usage: principal-skinner <owner/repo | github url> [--since YYYY-MM-DD] [--budget ${DEFAULT_BUDGET}] [--branch <name>] [--subdir <path>]
 
 Clones a repo with your authenticated gh CLI and prints a JSON dossier to stdout.
 
@@ -14,6 +15,7 @@ Options:
   --since YYYY-MM-DD   Only count commits authored on/after this date (UTC midnight)
   --budget N           Max characters of source samples (default ${DEFAULT_BUDGET})
   --branch <name>      Clone a specific branch instead of the default
+  --subdir <path>      Scope walk, signals, sampling, and git activity to a subdirectory
   -h, --help           Show this help`;
 
 class UsageError extends Error {}
@@ -23,6 +25,7 @@ interface Args {
     since: Date | null;
     budget: number;
     branch: string | undefined;
+    subdir: string | undefined;
 }
 
 function parseArgs(argv: string[]): Args {
@@ -30,6 +33,7 @@ function parseArgs(argv: string[]): Args {
     let since: Date | null = null;
     let budget = DEFAULT_BUDGET;
     let branch: string | undefined;
+    let subdir: string | undefined;
 
     for (let i = 0; i < argv.length; i++) {
         const a = argv[i];
@@ -56,6 +60,8 @@ function parseArgs(argv: string[]): Args {
             budget = Number(v);
         } else if (flag === '--branch') {
             branch = value();
+        } else if (flag === '--subdir') {
+            subdir = value();
         } else if (a.startsWith('-')) {
             throw new UsageError(`unknown option: ${a}`);
         } else if (repo === undefined) {
@@ -66,7 +72,7 @@ function parseArgs(argv: string[]): Args {
     }
 
     if (!repo) throw new UsageError('missing <owner/repo | github url>');
-    return { repo, since, budget, branch };
+    return { repo, since, budget, branch, subdir };
 }
 
 const log = (msg: string) => process.stderr.write(`[skinner] ${msg}\n`);
@@ -92,16 +98,17 @@ async function main(): Promise<void> {
     try {
         log('cloning');
         await cloneRepo(ref, dir, args.branch);
+        const walkRoot = args.subdir ? path.join(dir, args.subdir) : dir;
         log('reading history');
-        const activity = await commitStats(dir, args.since);
+        const activity = await commitStats(dir, args.since, args.subdir);
         log('resolving contributors');
         const contributors = args.branch
-            ? await branchContributors(ref, args.branch, args.since)
+            ? await branchContributors(ref, args.branch, args.since, args.subdir)
             : await repoContributors(ref);
         log('walking files');
-        const walked = walk(dir);
-        const signals = extractSignals(dir, walked.files);
-        const { samples, sampling } = selectSamples(dir, walked.files, args.budget);
+        const walked = walk(walkRoot);
+        const signals = extractSignals(walkRoot, walked.files);
+        const { samples, sampling } = selectSamples(walkRoot, walked.files, args.budget);
         log(`sampled ${sampling.files_sampled} files (${sampling.used_chars}/${sampling.budget} chars)`);
 
         const dossier = {
