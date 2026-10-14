@@ -114,9 +114,10 @@ make open
 Collects facts about a GitHub repo into a bounded JSON evidence pack. No scoring.
 
 ```bash
-principal-skinner <owner/repo | url> [--since YYYY-MM-DD] [--budget 300000] [--branch <name>]
+principal-skinner <owner/repo | url> [--since YYYY-MM-DD] [--budget 300000] [--branch <name>] [--subdir <path>]
 principal-skinner acme/hack-project --since 2026-10-01 > dossier.json
 principal-skinner acme/monorepo --branch hackathon-2026 --since 2026-10-01 > dossier.json
+principal-skinner org/big-repo --subdir services/my-hack --since 2026-10-01 > dossier.json
 ```
 
 | Flag | Default | Description |
@@ -125,6 +126,7 @@ principal-skinner acme/monorepo --branch hackathon-2026 --since 2026-10-01 > dos
 | `--since` | none | Only count commits on or after this date (UTC midnight) |
 | `--budget` | `300000` | Max characters of source samples |
 | `--branch` | none | Clone and score a specific branch (for branch-only submissions) |
+| `--subdir` | none | Scope file inventory and sampling to a subdirectory (for submissions that live inside a larger repo) |
 
 <details>
 <summary>JSON output shape</summary>
@@ -170,7 +172,7 @@ make full SINCE=2026-10-08 EVENT="Acme Hackathon 2026" OUT=results.html JOBS=4
 
 | Target | Description |
 |---|---|
-| `make score` | Score one repo — `REPO=owner/repo [BRANCH=name]` |
+| `make score` | Score one repo — `REPO=owner/repo [BRANCH=name] [SUBDIR=path]` |
 | `make score-all` | Score all repos in `REPOS_FILE` in parallel (`JOBS=N`) |
 | `make render` | Move `*-score.json` → `runs/YYYYMMDD-HHMMSS/`, render HTML there; if root has new scores and a prior run exists, merges both before rendering; re-renders from latest run if root is empty |
 | `make full` | score-all + render |
@@ -305,6 +307,9 @@ make full \
 
 # Score a branch-only submission
 make score REPO=acme/monorepo BRANCH=hackathon-2026 SINCE=2026-10-08
+
+# Score a submission that lives in a subdirectory of a larger repo
+make score REPO=org/big-repo SUBDIR=services/my-hack SINCE=2026-10-08
 
 # Open latest render
 make open
