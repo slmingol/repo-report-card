@@ -185,9 +185,9 @@ async function hasCommits(dir: string): Promise<boolean> {
 export async function commitStats(dir: string, since: Date | null, subdir?: string): Promise<Activity> {
     let out = '';
     if (await hasCommits(dir)) {
-        const logArgs = ['log', '--format=%aI%x09%ae'];
-        if (subdir) logArgs.push('--', subdir);
-        out = await run('git', logArgs, { cwd: dir, timeoutMs: 300_000 });
+        // Don't pass subdir to git log — partial clone (--filter=tree:0) can't resolve
+        // tree objects needed for path-filtered log. --since scopes the window sufficiently.
+        out = await run('git', ['log', '--format=%aI%x09%ae'], { cwd: dir, timeoutMs: 300_000 });
     }
 
     const all = out
